@@ -1,2 +1,41 @@
-# Capstone_DRM-Strike
-Repo for Capstone project for DRM Strike
+## Information on Project
+**Project:** #41 Security and Physical-DRM Architecture
+**Team Members:** Anne Johnson, Luke Zawis, & Payton Schmid
+**Team Name:** DRM-Strike
+**Supervisor/Clients:** 
+- Constantinos (Costas) Kolias
+	- kolias@uidaho.edu | [Directory Page](https://www.uidaho.edu/people/kolias)
+- Steve Wang
+	- stevew@uidaho.edu | [Directory Page](https://www.uidaho.edu/people/stevew)
+
+### Project Files
+**Capstone Details:** 
+- **Posted Details:** [Canvas Description](https://canvas.uidaho.edu/courses/48392/files/5614644?module_item_id=1835816)
+- **Local Details:** [[__41-UI CS Kolias-Security and Physical-DRM Architecture.pdf]]
+**Individual Log:** [[Capstone Individual Log]]
+**Schedule, Budget, & Validation:** [03 Project Planning](https://vandalsuidaho-my.sharepoint.com/:f:/r/personal/stevew_uidaho_edu/Documents/Shared/Fall%202026%20Capstone/Project%2341/03%20Project%20Planning?d=w88cacd703f9c4a25b99844a5c38acaa8&csf=1&web=1&e=YBoOJn)
+
+### Schedule Guideline
+Based on [project details document.](obsidian://open?vault=University%20of%20Idaho&file=CYB%204800%20-%20Capstone%2FFiles%2F__41-UI%20CS%20Kolias-Security%20and%20Physical-DRM%20Architecture.pdf)
+
+
+| Phase                                            | Duration     | Objective & Tasks                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Onboarding & prior-art teardown               | Week 1       | Stand up the development testbed; dissect documented failures of past console protection schemes; agree ways of working, repository structure, and ownership                                                                                                                                                                                                            |
+| 1. Threat model & requirements                   | Weeks 2–3    | • Define adversary classes and capabilities (casual copier, hobbyist modder, funded commercial pirate, malicious publisher)<br>• Enumerate attack surfaces: flash imaging, bus interception, binary decryption, memory dumping, boot-chain and OS injection, downgrade<br>• Derive security requirements for offline-first, account- free execution from physical media |
+| 2. Cartridge authentication & content protection | Weeks 4–6    | • Specify the console–cartridge challenge–response protocol (freshness, session binding, replay and relay resistance) <br>• Design the key ladder: per-title content key wrapped to the cartridge; no global secret whose compromise breaks the platform <br>• Implement on-demand decryption so titles execute without a plaintext image reaching writable storage     |
+| 3. Console trusted execution & OS lockdown       | Weeks 7–8    | • Verified boot chain and signed, immutable, integrity- checked system image <br>• Minimal hardened OS shell: no general-purpose terminal or filesystem access, sandboxed game runtime (with anti-tampering) <br>• Bind keys and decryption to a hardware root of trust; enforce rollback protection                                                                    |
+| 4. Ownership life-cycle                          | Week 9       | • Offline ownership-transfer protocol: resale and gifting without a server or account; Lending, multi-console use, and cartridge re-pairing <br>• Preservation path: key escrow so titles outlive their publisher <br>• Handling of loss, damage, and cloned-cartridge detection without phoning home                                                                   |
+| 5. Adversarial evaluation                        | Weeks 10– 11 | • Red-team the prototype: partition cloning, protocol replay and relay, glitching and side-channel attempts on the secure element, runtime memory inspection, image downgrade <br>• Measure and report attack cost and skill threshold per finding                                                                                                                      |
+| 6. Licensing, documentation & handover           | Week 12      | Formalize the developer and publisher licensing agreement for physical distribution (submission, signing, revocation, resale rights); document the legal frame (anticircumvention, first-sale, crypto export control); complete the specification, build guide, and red-team report; final presentation, demonstration, and handover.                                   |
+
+### Initial Project Description
+The console industry is converging on subscription and streaming models in which players pay a recurring fee for access to titles they never own. Access ends when a license is revoked, a title is delisted, or an entitlement server is switched off, and nothing can be lent, resold, or collected. This project proposes the opposite: a console whose library is physical. Each game ships on a purpose-built USB cartridge that is the license—it runs offline, requires no account, and can be traded, gifted, and shelved like a book or a record. The engineering consequence is sharp. Every anti-piracy guarantee that a modern platform obtains from an online entitlement service must instead be obtained from the medium itself. 
+
+This capstone designs, specifies, and prototypes that security architecture on commodity hard- ware. The technical core is a cartridge that is an active cryptographic device rather than passive storage: a composite USB device pairing a mass-storage interface with a secure element that holds a unique, non-extractable per-cartridge key. The console authenticates the cartridge by challenge–response before launch, title content remains encrypted at rest, and decryption occurs on demand into the running game so that no plaintext image ever exists on any writable medium. The threat model is unusual and worth stating plainly: the legitimate owner has unrestricted physical access and is not the adversary, yet mass duplication must remain un- economic. The team therefore targets measurable attack cost rather than impossibility, and says so explicitly in its requirements. 
+
+On the console side the team builds a hardened, minimal Linux platform with verified boot, a signed immutable system image, and a sandboxed game runtime in which debug interfaces, DMA paths, and general-purpose shell access are closed, with all key material confined to a hardware root of trust. Ownership lifecycle is treated as a first-class design problem rather than an afterthought: an offline protocol for transferring a cartridge to a new owner without contacting a server, provisions for lending, and a key-escrow and preservation path that keeps a title playable if its publisher disappears—a property conventional DRM deliberately lacks and a collectible medium cannot do without. 
+
+The team then attacks its own design: cloning of the storage partition, replay and relay of the authentication exchange, fault injection against the secure element, runtime memory scraping, and downgrade attacks on the console image, all informed by a Week-1 teardown of documented failures in prior console DRM. The final week formalizes the developer and publisher licensing agreement for physical distribution together with its legal frame—anti-circumvention rules, first-sale and resale rights, and export control on cryptography. 
+
+Work divides cleanly across five students—cartridge firmware, console platform, protocol and cryptography, adversarial evaluation, and licensing and documentation. Deliverables are a threat model, a protocol specification, a working prototype on off-the-shelf hardware, a red- team report with attack-cost estimates, a licensing draft, and a final presentation with live demonstration. Scope is deliberately tight: one cartridge design, one reference title, and no custom silicon. 
