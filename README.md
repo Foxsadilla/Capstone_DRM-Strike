@@ -1,41 +1,180 @@
-## Information on Project
-**Project:** #41 Security and Physical-DRM Architecture
-**Team Members:** Anne Johnson, Luke Zawis, & Payton Schmid
-**Team Name:** DRM-Strike
-**Supervisor/Clients:** 
-- Constantinos (Costas) Kolias
-	- kolias@uidaho.edu | [Directory Page](https://www.uidaho.edu/people/kolias)
-- Steve Wang
-	- stevew@uidaho.edu | [Directory Page](https://www.uidaho.edu/people/stevew)
+# Machines Overview
 
-### Project Files
-**Capstone Details:** 
-- **Posted Details:** [Canvas Description](https://canvas.uidaho.edu/courses/48392/files/5614644?module_item_id=1835816)
-- **Local Details:** [[__41-UI CS Kolias-Security and Physical-DRM Architecture.pdf]]
-**Individual Log:** [[Capstone Individual Log]]
-**Schedule, Budget, & Validation:** [03 Project Planning](https://vandalsuidaho-my.sharepoint.com/:f:/r/personal/stevew_uidaho_edu/Documents/Shared/Fall%202026%20Capstone/Project%2341/03%20Project%20Planning?d=w88cacd703f9c4a25b99844a5c38acaa8&csf=1&web=1&e=YBoOJn)
+| VM ID | Name      | IP               |
+| ----- | --------- | ---------------- |
+| 410   | Server    | 172.16.10.114/24 |
+| 411   | Platform  | 172.16.10.115/24 |
+| 412   | Cartridge | 172.16.10.116/24 |
+**CT Template:** `debian-13-standard_13.6-1_amd64.tar.zst`
 
-### Schedule Guideline
-Based on [project details document.](obsidian://open?vault=University%20of%20Idaho&file=CYB%204800%20-%20Capstone%2FFiles%2F__41-UI%20CS%20Kolias-Security%20and%20Physical-DRM%20Architecture.pdf)
+# Setup
+## Server
+### Setup HTTPS and TLS Usage
+``` bash
+apt install apache2 -y
+systemctl enable apache2
+
+# Set to use HTTPS:
+# Generate self-signed cert:
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/apache-selfsigned.key \
+  -out /etc/ssl/certs/apache-selfsigned.crt
+> [Common Name]: 172.16.10.114
+
+vim /etc/apache2/sites-available/default-ssl.conf
+# Add or validate these:
+<VirtualHost *:443>
+    ServerName 172.16.10.114
+    DocumentRoot /var/www/html
+
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+    # Restrict protocols to TLS 1.3 only
+    SSLProtocol -all +TLSv1.3
+    SSLHonorCipherOrder on
+</VirtualHost>
+
+vim /etc/apache2/sites-available/000-default.conf
+# Add:
+ServerName 172.16.10.114
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}$1 [R=301,L]
+```
+### Setup Micro-CA
+``` bash
+# initliaze the PKI micro CA Env:
+apt install easy-rsa -y
+make-cadir ~/micro-ca
+cd ~/micro-ca 
+./easyrsa init-pki
+./easyrsa build-ca
+> [Passphrase]: P@ssw0rd!
+> [Common Name]: 172.16.10.114
+
+# Create Server Cert:
+./easyrsa gen-req server-node nopass
+> [Common Name]: 172.16.10.114
+./easyrsa sign-req server server-node
+> yes
+> P@ssw0rd!
+
+# Create Cartridge Cert:
+./easyrsa gen-req storage-cartridge nopass
+> [Common Name]: storage-cartridge
+./easyrsa sign-req client storage-cartridge
+> yes
+> P@ssw0rd!
+
+# Software/Console Cert:
+./easyrsa gen-req consumer-software nopass
+> 172.16.10.115
+./easyrsa sign-req client consumer-software
+> yes
+> P@ssw0rd!
+
+# Force Apache to use mTLS w/ TLS 1.3
+vim /etc/apache2/sites-available/default-ssl.conf
+# Add and change:
+    # Server Cert and Key
+    SSLCertificateFile /root/micro-ca/pki/issued/server-node.crt
+    SSLCertificateKeyFile /root/micro-ca/pki/private/server-node.key
+    # Micro-CA Root Cert for Client Verification
+    SSLCACertificateFile /root/micro-ca/pki/ca.crt
+    # Force mTLS, Require and verify client certs
+    SSLVerifyClient require
+    SSLVerifyDepth 2
+
+# Validate:
+apache2ctl configtest
+systemctl restart apache2
+
+# Simulate that the cartridge does not have a network connection scp the files to it :)
+scp pki/ca.crt root@172.16.10.116:/root/
+scp pki/private/storage-cartridge.* root@172.16.10.116:/root/
+scp pki/issued/storage-cartridge.* root@172.16.10.116:/root/
+
+# On the Cartridge CT:
+mv storage-cartridge.crt /etc/ssl/certs/ && mv storage-cartridge.key \
+	/etc/ssl/private/ && mv ca.crt /etc/ssl/certs/
+
+```
 
 
-| Phase                                            | Duration     | Objective & Tasks                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0. Onboarding & prior-art teardown               | Week 1       | Stand up the development testbed; dissect documented failures of past console protection schemes; agree ways of working, repository structure, and ownership                                                                                                                                                                                                            |
-| 1. Threat model & requirements                   | Weeks 2–3    | • Define adversary classes and capabilities (casual copier, hobbyist modder, funded commercial pirate, malicious publisher)<br>• Enumerate attack surfaces: flash imaging, bus interception, binary decryption, memory dumping, boot-chain and OS injection, downgrade<br>• Derive security requirements for offline-first, account- free execution from physical media |
-| 2. Cartridge authentication & content protection | Weeks 4–6    | • Specify the console–cartridge challenge–response protocol (freshness, session binding, replay and relay resistance) <br>• Design the key ladder: per-title content key wrapped to the cartridge; no global secret whose compromise breaks the platform <br>• Implement on-demand decryption so titles execute without a plaintext image reaching writable storage     |
-| 3. Console trusted execution & OS lockdown       | Weeks 7–8    | • Verified boot chain and signed, immutable, integrity- checked system image <br>• Minimal hardened OS shell: no general-purpose terminal or filesystem access, sandboxed game runtime (with anti-tampering) <br>• Bind keys and decryption to a hardware root of trust; enforce rollback protection                                                                    |
-| 4. Ownership life-cycle                          | Week 9       | • Offline ownership-transfer protocol: resale and gifting without a server or account; Lending, multi-console use, and cartridge re-pairing <br>• Preservation path: key escrow so titles outlive their publisher <br>• Handling of loss, damage, and cloned-cartridge detection without phoning home                                                                   |
-| 5. Adversarial evaluation                        | Weeks 10– 11 | • Red-team the prototype: partition cloning, protocol replay and relay, glitching and side-channel attempts on the secure element, runtime memory inspection, image downgrade <br>• Measure and report attack cost and skill threshold per finding                                                                                                                      |
-| 6. Licensing, documentation & handover           | Week 12      | Formalize the developer and publisher licensing agreement for physical distribution (submission, signing, revocation, resale rights); document the legal frame (anticircumvention, first-sale, crypto export control); complete the specification, build guide, and red-team report; final presentation, demonstration, and handover.                                   |
+## Platform (Console)
+### Serial Link Setup
+``` bash
+# Going to number these so its easier to jump between the sections :P
+# Step 1:
+apt install socat -y
 
-### Initial Project Description
-The console industry is converging on subscription and streaming models in which players pay a recurring fee for access to titles they never own. Access ends when a license is revoked, a title is delisted, or an entitlement server is switched off, and nothing can be lent, resold, or collected. This project proposes the opposite: a console whose library is physical. Each game ships on a purpose-built USB cartridge that is the license—it runs offline, requires no account, and can be traded, gifted, and shelved like a book or a record. The engineering consequence is sharp. Every anti-piracy guarantee that a modern platform obtains from an online entitlement service must instead be obtained from the medium itself. 
+# Step 2: Go to cartirdge Step 2
 
-This capstone designs, specifies, and prototypes that security architecture on commodity hard- ware. The technical core is a cartridge that is an active cryptographic device rather than passive storage: a composite USB device pairing a mass-storage interface with a secure element that holds a unique, non-extractable per-cartridge key. The console authenticates the cartridge by challenge–response before launch, title content remains encrypted at rest, and decryption occurs on demand into the running game so that no plaintext image ever exists on any writable medium. The threat model is unusual and worth stating plainly: the legitimate owner has unrestricted physical access and is not the adversary, yet mass duplication must remain un- economic. The team therefore targets measurable attack cost rather than impossibility, and says so explicitly in its requirements. 
+# Step 3: Expose to the cartidge's serial link by mapping it to a local port
+# Keep this in it's own window:
+socat -d -d PTY,link=/dev/ttyS_CARTRIDGE,raw,echo=0 TCP:172.16.10.116:4000
+# Check that it is mounted in new window:
+ls -l /dev/ttyS_CARTRIDGE
 
-On the console side the team builds a hardened, minimal Linux platform with verified boot, a signed immutable system image, and a sandboxed game runtime in which debug interfaces, DMA paths, and general-purpose shell access are closed, with all key material confined to a hardware root of trust. Ownership lifecycle is treated as a first-class design problem rather than an afterthought: an offline protocol for transferring a cartridge to a new owner without contacting a server, provisions for lending, and a key-escrow and preservation path that keeps a title playable if its publisher disappears—a property conventional DRM deliberately lacks and a collectible medium cannot do without. 
+# Step 4: Test that communications can be sent (Use the altered command on Cartridge Step 3)
+# While step 3 runs, in a new window run:
+echo "TEST_CARTRIDGE_LINK" > /dev/ttyS_CARTRIDGE
 
-The team then attacks its own design: cloning of the storage partition, replay and relay of the authentication exchange, fault injection against the secure element, runtime memory scraping, and downgrade attacks on the console image, all informed by a Week-1 teardown of documented failures in prior console DRM. The final week formalizes the developer and publisher licensing agreement for physical distribution together with its legal frame—anti-circumvention rules, first-sale and resale rights, and export control on cryptography. 
+```
 
-Work divides cleanly across five students—cartridge firmware, console platform, protocol and cryptography, adversarial evaluation, and licensing and documentation. Deliverables are a threat model, a protocol specification, a working prototype on off-the-shelf hardware, a red- team report with attack-cost estimates, a licensing draft, and a final presentation with live demonstration. Scope is deliberately tight: one cartridge design, one reference title, and no custom silicon. 
+## Cartridge
+### Serial Link Setup
+``` bash
+# Step 1:
+apt install socat -y
+
+# Step 2: Create a binded virtual psuedoterminanl and expose over a TCP port (4000):
+# /dev/ttyV0 is a virtual serial device that a local service can RW with
+socat -d -d PTY,link=/dev/ttyV0,raw,echo=0 TCP-LISTEN:4000,reuseaddr,fork
+
+# Step 3: Test connectivity
+# End current session on both CTs and start it again but use this instead on the cartidge:
+socat -d -d PTY,link=/dev/ttyV0,raw,echo=0 TCP-LISTEN:4000,reuseaddr,fork &
+# Check output from Platform Step 4 test:
+cat </dev/ttyV0
+```
+
+### Encryption at Rest 
+``` bash
+apt install cryptsetup -y
+
+# Create a raw image file to emualte data being stored
+dd if=/dev/zero of=/var/cartridge_storage.img bs=1M count=512
+
+# Encrypt it:
+cryptsetup luksFormat /var/cartridge_storage.img
+> YES
+> P@ssw0rd!
+> P@ssw0rd!
+```
+
+# Scripts
+## Server
+**server-db.py**
+``` python
+```
+
+**server.py**
+``` python
+```
+
+**provision.py**
+``` python
+```
+
+## Platform (Console/Software Host)
+
+## Cartridge
+
+---
+## Changes Needed:
+1. **Reissue the server cert with an IP SAN.** Yours has `172.16.10.114` only as the CN. Python `requests` ignores the CN and will reject the cert. Check first with `openssl x509 -in /root/micro-ca/pki/issued/server-node.crt -noout -text | grep -A1 "Alternative"`. If no `IP Address:172.16.10.114` appears, delete the old `server-node` req, key and crt from the `pki` folder. Then rerun `./easyrsa --subject-alt-name="IP:172.16.10.114" build-server-full server-node nopass`. Your Apache paths don’t change.
+2. **Add the proxy and identity header to `default-ssl.conf`.** Add the `SSLOptions`, `RequestHeader` and `ProxyPass` lines from section 4 of the runbook. Also run `a2enmod headers proxy proxy_http`. Everything else in your vhost stays.
+3. **Redo the LUKS passphrase.** Right now the volume uses `P@ssw0rd!`, and the whole design depends on the server holding a generated key. The image is empty, so run the section 6.2 pipeline (`provision.py ... | ssh root@172.16.10.116 '...'`). It reformats the image with the server’s key and builds the filesystem. 
