@@ -5,13 +5,14 @@
 | 410   | Server    | 172.16.10.114/24 |
 | 411   | Platform  | 172.16.10.115/24 |
 | 412   | Cartridge | 172.16.10.116/24 |
+
 **CT Template:** `debian-13-standard_13.6-1_amd64.tar.zst`
 
 # Setup
 ## Server
 ### Setup HTTPS and TLS Usage
 ``` bash
-apt install apache2 -y
+apt install apache2 easy-rsa sqlite -y
 systemctl enable apache2
 
 # Set to use HTTPS:
@@ -28,20 +29,32 @@ vim /etc/apache2/sites-available/default-ssl.conf
     DocumentRoot /var/www/html
 
     SSLEngine on
-    SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem
-    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
-
+    SSLCertificateFile    /root/micro-ca/pki/issued/server-node.crt
+    SSLCertificateKeyFile /root/micro-ca/pki/private/server-node.key
+	
+	SSLVerifyClient require
+	SSLVerifyDepth 2
     # Restrict protocols to TLS 1.3 only
     SSLProtocol -all +TLSv1.3
     SSLHonorCipherOrder on
+    
+     SSLOptions +StdEnvVars
+
+    RequestHeader unset X-Client-CN
+    RequestHeader set   X-Client-CN "%{SSL_CLIENT_S_DN_CN}s"
+
+    ProxyPreserveHost On
+    ProxyPass        /api/ http://127.0.0.1:5000/api/
+    ProxyPassReverse /api/ http://127.0.0.1:5000/api/
+    
 </VirtualHost>
 
 vim /etc/apache2/sites-available/000-default.conf
-# Add:
-ServerName 172.16.10.114
-RewriteEngine On
-RewriteCond %{HTTPS} off
-RewriteRule ^(.*)$ https://%{HTTP_HOST}$1 [R=301,L]
+# Add/change:
+<VirtualHost *:80>
+    ServerName 172.16.10.114
+    Redirect permanent / https://172.16.10.114/
+</VirtualHost>
 ```
 ### Setup Micro-CA
 ``` bash
@@ -55,9 +68,7 @@ cd ~/micro-ca
 > [Common Name]: 172.16.10.114
 
 # Create Server Cert:
-./easyrsa gen-req server-node nopass
-> [Common Name]: 172.16.10.114
-./easyrsa sign-req server server-node
+./easyrsa --subject-alt-name="IP:172.16.10.114" build-server-full server-node nopass
 > yes
 > P@ssw0rd!
 
@@ -69,9 +80,7 @@ cd ~/micro-ca
 > P@ssw0rd!
 
 # Software/Console Cert:
-./easyrsa gen-req consumer-software nopass
-> 172.16.10.115
-./easyrsa sign-req client consumer-software
+./easyrsa build-client-full HOST-SERIAL-001 nopass
 > yes
 > P@ssw0rd!
 
@@ -91,7 +100,7 @@ vim /etc/apache2/sites-available/default-ssl.conf
 apache2ctl configtest
 systemctl restart apache2
 
-# Simulate that the cartridge does not have a network connection scp the files to it :)
+# Send to cartridge (assume this is in the factory because this needs a connection)
 scp pki/ca.crt root@172.16.10.116:/root/
 scp pki/private/storage-cartridge.* root@172.16.10.116:/root/
 scp pki/issued/storage-cartridge.* root@172.16.10.116:/root/
@@ -99,6 +108,11 @@ scp pki/issued/storage-cartridge.* root@172.16.10.116:/root/
 # On the Cartridge CT:
 mv storage-cartridge.crt /etc/ssl/certs/ && mv storage-cartridge.key \
 	/etc/ssl/private/ && mv ca.crt /etc/ssl/certs/
+	
+# Check that these are running for TLS and HTTPS:
+systemctl restart apache2
+a2enmod ssl headers proxy proxy_http
+a2ensite default-ssl
 
 ```
 
@@ -128,7 +142,7 @@ echo "TEST_CARTRIDGE_LINK" > /dev/ttyS_CARTRIDGE
 ### Serial Link Setup
 ``` bash
 # Step 1:
-apt install socat -y
+apt install socat cryptsetup openssh-server -y
 
 # Step 2: Create a binded virtual psuedoterminanl and expose over a TCP port (4000):
 # /dev/ttyV0 is a virtual serial device that a local service can RW with
@@ -159,6 +173,57 @@ cryptsetup luksFormat /var/cartridge_storage.img
 ## Server
 **server-db.py**
 ``` python
+# Name: server-db.py
+# Nodes: server (/root/validator/)
+# Purpose: Create the SQL database for the server for managing client devices
+# Last Updated: 11/07/2026
+# ==============================================
+
+import sqlite3
+
+DB_PATH = "/root/validator/server_database.db"
+
+def connect():
+    # DO NOT USE "connect", it'll cause conflicts.
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+    # end
+
+def init_db():
+    conn = connect()
+    # In the cartridge section, luks key is escrowed!
+    conn.executescript("""
+    CREATE TABLE IF NOT EXSITS hosts (
+        host_serial TEXT PRIMARY KEY,
+        owner_id    TEXT NOT NULL,
+        is_active   INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS cartridges (
+        cartridge_id TEXT PRIMARY KEY,
+        luks_key     TEXT NOT NULL,
+        is_active    INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS ownership (
+        host_serial TEXT NOT NULL REFERENCES hosts(host_serial),
+        cartridge_id TEXT NOT NULL REFERENCES cartridges(cartridge_id),
+        PRIMARY KEY (host_serial, cartridge_id)
+    );
+    CREATE TABLE IF NOT EXISTS nonces (
+        nonce        TEXT PRIMARY KEY,
+        host_serial  TEXT NOT NULL,
+        cartridge_id TEXT NOT NULL,
+        expires_at   REAL NOT NULL,
+        used         INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS audit (
+        ts REAL, event TEXT, host_serial TEXT, cartridge_id TEXT, detail TEXT
+    );
+
+    """)
+    conn.commit()
+    conn.close()
+    # end
 ```
 
 **server.py**
