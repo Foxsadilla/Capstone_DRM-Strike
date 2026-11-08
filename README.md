@@ -55,6 +55,10 @@ vim /etc/apache2/sites-available/000-default.conf
     ServerName 172.16.10.114
     Redirect permanent / https://172.16.10.114/
 </VirtualHost>
+
+# Apply:
+apache2ctl configtest
+systemctl restart apache2
 ```
 ### Setup Micro-CA
 ``` bash
@@ -113,6 +117,16 @@ mv storage-cartridge.crt /etc/ssl/certs/ && mv storage-cartridge.key \
 systemctl restart apache2
 a2enmod ssl headers proxy proxy_http
 a2ensite default-ssl
+
+# Validate that the TLS 1.3 is working:
+cd /root/micro-ca/pki
+# TLS 1.2 must fail
+openssl s_client -connect 172.16.10.114:443 -tls1_2 -CAfile ca.crt </dev/null 2>&1 | grep -iE "alert|error"
+# No client cert must fail
+curl --cacert ca.crt https://172.16.10.114/api/challenge
+# TLS 1.3 with a valid client cert must connect
+openssl s_client -connect 172.16.10.114:443 -tls1_3 -CAfile ca.crt \
+  -cert issued/HOST-SERIAL-001.crt -key private/HOST-SERIAL-001.key </dev/null 2>&1 | grep -E "Protocol|Verification"
 
 ```
 

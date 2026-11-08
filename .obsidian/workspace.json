@@ -83,7 +83,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "be5128089f547d80",
@@ -189,5 +190,18 @@
     }
   },
   "active": "370d10049d0654d5",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "Scripts/Server/db.py",
+    "TMP/Container/debian-13-standard_13.6-1_amd64.tar.zst",
+    "TMP/Container",
+    "TMP/README.md",
+    "TMP/Scripts/platform-host/software-host.py",
+    "TMP/Scripts/platform-host",
+    "TMP/Scripts/cartridge/cartridge-daemon.py",
+    "TMP/Scripts/cartridge",
+    "TMP/Scripts/Server/server.py",
+    "TMP/Scripts/Server/db.py",
+    "TMP/Scripts/Server/provision.py",
+    "TMP/Scripts/Server"
+  ]
 }
