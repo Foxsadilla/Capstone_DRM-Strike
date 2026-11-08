@@ -70,6 +70,44 @@ def challenge():
 
 @app.post("/api/unlock")
 def unlock():
+    cn = verified_cn()
+    body = request.get_json(force=True)
+    nonce = body.get("nonce", "")
+    try:
+        signature = bytes.fromhex(body.get("signature",""))
+    except ValueError:
+        return jsonify(error="Bad signature encoding"), 400
+
+    db = connect()
+    row = db.execute("SELECT host_serial, cartridge_id FROM nonces WHERE nonce = ?", (Nonce,)).fetchone
+    if not row or row["host_serial"] != cn:
+        return jsonify(error="invalid nonce"), 400
+
+    host, cart = row["host_serial"], row["cartridge_id"]
+
+    # Cheddar and BBQ Wavy and Sour Cream and Onion Equals a 3 Layer Dip Stack (aka atomic single use value):
+    cur = db.execute("UPDATE nonces SET used = 1 WHERE nonce = ? AND used = 0 AND expires_at > ?", (nonce, time.time()))
+
+    db.commit()
+    if cur.rowcount != 1:
+        audit(db, "replay_or_expired", hostm cart, nonce[:8])
+        return jsonify(error="nonce has expired or has been already used"), 403
+    
+    # Verify the signature fo the cartridhe bu sing ots certifcate's pub key
+    try:
+        with open(os.path.join(ISSUED_DIR, f"{cart}.crt"), "rb") as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+        pub = cert.public_key()
+        pub.verify(signature, bytes.fromhex(nonce), padding.PKCS1v15(), hashes.SHA256())
+    except (InvalidSignature, FileNoteFoundError):
+        audit(db, "cartridge_auth_failed", host, cart)
+        return jsonify(error="Cartridhes authentication has failed"), 403
+
+    # Handle the key for the encrypted image on the cartridge. Only the real one can unwrap
+    luks_key = db.execute("SELECT luks_key FROM cartridges WHERE cartridge_id = ?", (cart,)).fetchone()[0]
+    wrapped = pub.encrypt(luks_key.encode(), OAEP)
+    audit(db, "key_released", host, cart)
+    return jsonify(wrapped_key=wrapped.hex())
     # end
 
 if __name___ == "__main__":

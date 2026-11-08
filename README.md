@@ -8,6 +8,10 @@
 
 **CT Template:** `debian-13-standard_13.6-1_amd64.tar.zst`
 
+
+> [!Cartridhe] Cartridge Note
+> IMPORTANT, the container must be created to be privilaged.
+
 # Setup
 ## Server
 ### Setup HTTPS and TLS Usage
@@ -153,6 +157,24 @@ echo "TEST_CARTRIDGE_LINK" > /dev/ttyS_CARTRIDGE
 ```
 
 ## Cartridge
+### Proxmox Edits
+Add the following changes within the Proxmox node terminal:
+``` bash
+pct stop 412
+
+vim /etc/pve/lxc/412.con
+# Add:
+lxc.cgroup2.devices.allow: c 10:236 rwm
+lxc.cgroup2.devices.allow: c 10:237 rwm
+lxc.cgroup2.devices.allow: b 7:* rwm
+lxc.cgroup2.devices.allow: b 252:* rwm # Number can be found with: grep device-mapper /proc/devices
+lxc.mount.entry: /dev/mapper dev/mapper none bind,create=dir 0 0
+lxc.mount.entry: /dev/loop-control dev/loop-control none bind,create=file 0 0
+lxc.apparmor.profile: unconfined
+lxc.cap.drop:
+
+pct start 412
+```
 ### Serial Link Setup
 ``` bash
 # Step 1:
@@ -171,23 +193,38 @@ cat </dev/ttyV0
 
 ### Encryption at Rest 
 ``` bash
-apt install cryptsetup -y
+# Enable loop nodes on the cartridge (DO NOT USE FISH WHILE DOING THIS):
+vim /etc/systemd/system/loop-nodes.service
+[Unit]
+Description=Create loop device nodes
+Before=local-fs.target
 
-# Create a raw image file to emualte data being stored
-dd if=/dev/zero of=/var/cartridge_storage.img bs=1M count=512
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'for i in 0 1 2 3 4 5 6 7; do [ -e /dev/loop$i ] || mknod /dev/loop$i b 7 $i; done'
 
-# Encrypt it:
-cryptsetup luksFormat /var/cartridge_storage.img
-> YES
-> P@ssw0rd!
-> P@ssw0rd!
+[Install]
+WantedBy=multi-user.target
+
+systemctl enable --now loop-nodes
+
+# Make this from the server so the decryption key is never saved on the cartridge:
+python3 provision.py storage-cartridge HOST-SERIAL-001 Company-User-A | ssh root@172.16.10.116 '
+  K=$(cat)
+  printf %s "$K" | cryptsetup luksFormat --batch-mode --key-file=- /var/cartridge_storage.img
+  printf %s "$K" | cryptsetup luksOpen --key-file=- /var/cartridge_storage.img secure_cartridge
+  mkfs.ext4 -q /dev/mapper/secure_cartridge
+  cryptsetup luksClose secure_cartridge
+  unset K
+'
 ```
 
 # Scripts
 ## Server
-**server-db.py**
+**db.py**
 ``` python
-# Name: server-db.py
+# Name: db.py
 # Nodes: server (/root/validator/)
 # Purpose: Create the SQL database for the server for managing client devices
 # Last Updated: 11/07/2026
@@ -206,20 +243,19 @@ def connect():
 
 def init_db():
     conn = connect()
-    # In the cartridge section, luks key is escrowed!
     conn.executescript("""
-    CREATE TABLE IF NOT EXSITS hosts (
+    CREATE TABLE IF NOT EXISTS hosts (
         host_serial TEXT PRIMARY KEY,
         owner_id    TEXT NOT NULL,
         is_active   INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE IF NOT EXISTS cartridges (
         cartridge_id TEXT PRIMARY KEY,
-        luks_key     TEXT NOT NULL,
+        luks_key     TEXT NOT NULL,          
         is_active    INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE IF NOT EXISTS ownership (
-        host_serial TEXT NOT NULL REFERENCES hosts(host_serial),
+        host_serial  TEXT NOT NULL REFERENCES hosts(host_serial),
         cartridge_id TEXT NOT NULL REFERENCES cartridges(cartridge_id),
         PRIMARY KEY (host_serial, cartridge_id)
     );
@@ -233,25 +269,164 @@ def init_db():
     CREATE TABLE IF NOT EXISTS audit (
         ts REAL, event TEXT, host_serial TEXT, cartridge_id TEXT, detail TEXT
     );
-
     """)
+
     conn.commit()
     conn.close()
     # end
+
 ```
 
 **server.py**
+
 ``` python
+# Name: server.py
+# Nodes: server (/root/validator/)
+# Purpose: Simulates the function of ther server
+# Last Updated: 11/07/2026
+# ==============================================
+
+import os, secrets, time
+
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from flask import Flask, abort, jsonify, request
+
+from db import connect, init_db
+# ==============================================
+
+ISSUED_DIR = os.environ.get("ISSUED_DIR","/root/micro-ca/pki/issued")
+NONCE_TTL = 30 # seconds!
+OAEP = padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
+
+app = Flask(__name__)
+init_db()
+
+# Send out status messages:
+def audit(db, event, host=None, cart=None, detail=""):
+    db.execute("INSERT INTO audit VALUES (?,?,?,?,?)", (time.time(), event, host, cart, detail))
+    db.commit()
+    # end
+
+def verified_cn():
+    # Pull the common name from Apache (avl from client cert):
+    cn = request.headers.get("X-Client-CN")
+
+    if not cn:
+        abort(401)
+    
+    return cn
+    # end
+
+@app.post("/api/challenge")
+def challenge():
+    cn = verified_cn()
+    body = request.get_json(force=True)
+    host, cart= body.get("host_serial"), body.get("cartridge_id")
+    db.connect()
+
+    if host != cn:
+        audit(db, "challenge_denied", host, cart, f"cert CN {cn} does not match claimed serial")
+        return jsonify(error="Certificate does not match the serial"), 403
+
+    ok = db.execute("""
+        SELECT 1 FROM hosts h
+        JOIN ownership o ON o.host_serial = h.host_serial
+        JOIN cartridges c ON c.cartridge_id = o.cartridge_id
+        WHERE h.host_serial = ? AND c.cartridge_id = ?
+          AND h.is_active = 1 AND c.is_active = 1""", (host, cart)).fetchone()
+    if not ok:
+        audit(db, "challenge_denied", host, cart, "unknown/inactive/unpaired")
+        return jsonify(error="host/cartridge not authorized"), 403
+
+    # Not the NFSW version :3; TTL Nonce is a nonce combinded with its time to live (expiration)
+    nonce = secrets.token_hex(32)
+    db.execute("INSERT INTO nonces (nonce, host_serial, cartridge_id, expires_at) VALUES (?,?,?,?)", (nonce, host, cart, time.time() + NONCE_TTL))
+    db.commit()
+
+    audit(db, "challenge_issued", host, cart)
+    return jsonify(nonce=nonce, ttl=NONCE_TTL)
+    # end
+
+@app.post("/api/unlock")
+def unlock():
+    cn = verified_cn()
+    body = request.get_json(force=True)
+    nonce = body.get("nonce", "")
+    try:
+        signature = bytes.fromhex(body.get("signature",""))
+    except ValueError:
+        return jsonify(error="Bad signature encoding"), 400
+
+    db = connect()
+    row = db.execute("SELECT host_serial, cartridge_id FROM nonces WHERE nonce = ?", (Nonce,)).fetchone
+    if not row or row["host_serial"] != cn:
+        return jsonify(error="invalid nonce"), 400
+
+    host, cart = row["host_serial"], row["cartridge_id"]
+
+    # Cheddar and BBQ Wavy and Sour Cream and Onion Equals a 3 Layer Dip Stack (aka atomic single use value):
+    cur = db.execute("UPDATE nonces SET used = 1 WHERE nonce = ? AND used = 0 AND expires_at > ?", (nonce, time.time()))
+
+    db.commit()
+    if cur.rowcount != 1:
+        audit(db, "replay_or_expired", host, cart, nonce[:8])
+        return jsonify(error="nonce has expired or has been already used"), 403
+    
+    # Verify the signature fo the cartridhe bu sing ots certifcate's pub key
+    try:
+        with open(os.path.join(ISSUED_DIR, f"{cart}.crt"), "rb") as f:
+            cert = x509.load_pem_x509_certificate(f.read())
+        pub = cert.public_key()
+        pub.verify(signature, bytes.fromhex(nonce), padding.PKCS1v15(), hashes.SHA256())
+    except (InvalidSignature, FileNoteFoundError):
+        audit(db, "cartridge_auth_failed", host, cart)
+        return jsonify(error="Cartridhes authentication has failed"), 403
+
+    # Handle the key for the encrypted image on the cartridge. Only the real one can unwrap
+    luks_key = db.execute("SELECT luks_key FROM cartridges WHERE cartridge_id = ?", (cart,)).fetchone()[0]
+    wrapped = pub.encrypt(luks_key.encode(), OAEP)
+    audit(db, "key_released", host, cart)
+    return jsonify(wrapped_key=wrapped.hex())
+    # end
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
 ```
 
 **provision.py**
 ``` python
+# Name: provision.py
+# Nodes: server (/root/validator/)
+# Purpose: Registers the cartidge and prints a new key to stdout
+# Last Updated: 11/07/2026
+# ==============================================
+
+import secrets, sys
+from db import connect, init_db
+
+cart_id, host_serial, owner_id = sys.argv[1:4]
+key = secrets.token_hex(32)
+
+init_db()
+db = connect()
+db.execute("INSERT INTO cartridges (cartridge_id, luks_key) VALUES (?, ?)", (cart_id, key))
+db.execute("INSERT OR IGNORE INTO hosts (host_serial, owner_id) VALUES (?, ?)", (host_serial, owner_id))
+db.execute("INSERT OR IGNORE INTO ownership VALUES (?, ?)", (host_serial, cart_id))
+db.commit()
+
+# This prevents there being no new line and instead the ecact bytes become the LUKS passphrase!
+sys.stdout.write(key)
 ```
 
 ## Platform (Console/Software Host)
 
 ## Cartridge
-
+**cartridge_daemon.py**
+``` 
+```
 ---
 ## Changes Needed:
 1. **Reissue the server cert with an IP SAN.** Yours has `172.16.10.114` only as the CN. Python `requests` ignores the CN and will reject the cert. Check first with `openssl x509 -in /root/micro-ca/pki/issued/server-node.crt -noout -text | grep -A1 "Alternative"`. If no `IP Address:172.16.10.114` appears, delete the old `server-node` req, key and crt from the `pki` folder. Then rerun `./easyrsa --subject-alt-name="IP:172.16.10.114" build-server-full server-node nopass`. Your Apache paths don’t change.
