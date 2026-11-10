@@ -205,19 +205,21 @@
   },
   "active": "370d10049d0654d5",
   "lastOpenFiles": [
+    "SCP/Scripts/Server/server.py",
+    "SCP/Scripts/Server/provision.py",
+    "SCP/Scripts/Server/db.py",
+    "SCP/Scripts/platform-host/software-host.py",
+    "SCP/Scripts/cartridge/cartridge-daemon.py",
+    "SCP/Scripts/Server",
+    "SCP/Scripts/platform-host",
+    "SCP/Scripts/cartridge",
+    "SCP/Container/debian-13-standard_13.6-1_amd64.tar.zst",
+    "SCP/Scripts",
+    "SCP/README.md",
+    "SCP/Container",
+    "TMP/README.md",
     "cartridge-runbook.md",
     "README.md",
-    "Misc/Old-README.md",
-    "Misc",
-    "Scripts/Server/db.py",
-    "TMP/Container/debian-13-standard_13.6-1_amd64.tar.zst",
-    "TMP/Container",
-    "TMP/README.md",
-    "TMP/Scripts/platform-host/software-host.py",
-    "TMP/Scripts/platform-host",
-    "TMP/Scripts/cartridge/cartridge-daemon.py",
-    "TMP/Scripts/cartridge",
-    "TMP/Scripts/Server/server.py",
-    "TMP/Scripts/Server/db.py"
+    "Misc/Old-README.md"
   ]
 }

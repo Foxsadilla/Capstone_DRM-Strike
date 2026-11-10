@@ -17,20 +17,19 @@ def connect():
 
 def init_db():
     conn = connect()
-    # In the cartridge section, luks key is escrowed!
     conn.executescript("""
-    CREATE TABLE IF NOT EXSITS hosts (
+    CREATE TABLE IF NOT EXISTS hosts (
         host_serial TEXT PRIMARY KEY,
         owner_id    TEXT NOT NULL,
         is_active   INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE IF NOT EXISTS cartridges (
         cartridge_id TEXT PRIMARY KEY,
-        luks_key     TEXT NOT NULL,
+        luks_key     TEXT NOT NULL,          
         is_active    INTEGER NOT NULL DEFAULT 1
     );
     CREATE TABLE IF NOT EXISTS ownership (
-        host_serial TEXT NOT NULL REFERENCES hosts(host_serial),
+        host_serial  TEXT NOT NULL REFERENCES hosts(host_serial),
         cartridge_id TEXT NOT NULL REFERENCES cartridges(cartridge_id),
         PRIMARY KEY (host_serial, cartridge_id)
     );
@@ -44,8 +43,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS audit (
         ts REAL, event TEXT, host_serial TEXT, cartridge_id TEXT, detail TEXT
     );
-
     """)
+
     conn.commit()
     conn.close()
     # end

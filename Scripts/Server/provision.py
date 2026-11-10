@@ -10,7 +10,7 @@ from db import connect, init_db
 cart_id, host_serial, owner_id = sys.argv[1:4]
 key = secrets.token_hex(32)
 
-init_db
+init_db()
 db = connect()
 db.execute("INSERT INTO cartridges (cartridge_id, luks_key) VALUES (?, ?)", (cart_id, key))
 db.execute("INSERT OR IGNORE INTO hosts (host_serial, owner_id) VALUES (?, ?)", (host_serial, owner_id))

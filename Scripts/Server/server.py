@@ -1,7 +1,7 @@
 # Name: server.py
 # Nodes: server (/root/validator/)
 # Purpose: Simulates the function of ther server
-# Last Updated: 11/07/2026
+# Last Updated: 11/10/2026
 # ==============================================
 
 import os, secrets, time
@@ -19,7 +19,7 @@ ISSUED_DIR = os.environ.get("ISSUED_DIR","/root/micro-ca/pki/issued")
 NONCE_TTL = 30 # seconds!
 OAEP = padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
 
-app = Flask(__name___)
+app = Flask(__name__)
 init_db()
 
 # Send out status messages:
@@ -43,7 +43,7 @@ def challenge():
     cn = verified_cn()
     body = request.get_json(force=True)
     host, cart= body.get("host_serial"), body.get("cartridge_id")
-    db.connect()
+    db = connect()
 
     if host != cn:
         audit(db, "challenge_denied", host, cart, f"cert CN {cn} does not match claimed serial")
@@ -79,7 +79,8 @@ def unlock():
         return jsonify(error="Bad signature encoding"), 400
 
     db = connect()
-    row = db.execute("SELECT host_serial, cartridge_id FROM nonces WHERE nonce = ?", (Nonce,)).fetchone
+    row = db.execute("SELECT host_serial, cartridge_id FROM nonces WHERE nonce = ?", (nonce,)).fetchone()
+
     if not row or row["host_serial"] != cn:
         return jsonify(error="invalid nonce"), 400
 
@@ -90,7 +91,7 @@ def unlock():
 
     db.commit()
     if cur.rowcount != 1:
-        audit(db, "replay_or_expired", hostm cart, nonce[:8])
+        audit(db, "replay_or_expired", host, cart, nonce[:8])
         return jsonify(error="nonce has expired or has been already used"), 403
     
     # Verify the signature fo the cartridhe bu sing ots certifcate's pub key
@@ -99,7 +100,7 @@ def unlock():
             cert = x509.load_pem_x509_certificate(f.read())
         pub = cert.public_key()
         pub.verify(signature, bytes.fromhex(nonce), padding.PKCS1v15(), hashes.SHA256())
-    except (InvalidSignature, FileNoteFoundError):
+    except (InvalidSignature, FileNotFoundError):
         audit(db, "cartridge_auth_failed", host, cart)
         return jsonify(error="Cartridhes authentication has failed"), 403
 
@@ -110,5 +111,5 @@ def unlock():
     return jsonify(wrapped_key=wrapped.hex())
     # end
 
-if __name___ == "__main__":
+if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
