@@ -1,11 +1,17 @@
-# Pull: `docker import debian-13-standard_13.6-1_amd64.tar.txt debian13-local:latest`
+root@pve4:~# for id in $(pct list | awk '/running/ {print $1}'); do echo "$id | $(pct config $id | awk '/hostname:/ {print $2}') | $(pct exec $id -- hostname -I)"; done
+410 | ACME-Issuer | 172.16.10.121
+411 | ACME-Provision |
+412 | ACME-Server | 172.16.10.122
+413 | ACME-Console | 172.16.10.123
+414 | ACME-Cartridge | 172.16.10.124
 
-version: '3.8'
-
-services:
-  debian-container:
-    image: debian13-local:latest
-    container_name: debian13_container
-    stdin_open: true # Keeps the container stdin open (like -i)
-    tty: true        # Allocates a pseudo-TTY (like -t)
-    command: /bin/bash
+root@ACME-Issuer:/opt/acme# tree
+.
+|-- acme
+|   |-- __init__.py
+|   |-- cert.py
+|   `-- crypto.py
+|-- lib.tar.gz
+`-- tests
+    |-- test_cert.py
+    `-- test_crypto.py
