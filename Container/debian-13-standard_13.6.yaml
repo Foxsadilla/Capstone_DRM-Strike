@@ -1,17 +1,1 @@
-root@pve4:~# for id in $(pct list | awk '/running/ {print $1}'); do echo "$id | $(pct config $id | awk '/hostname:/ {print $2}') | $(pct exec $id -- hostname -I)"; done
-410 | ACME-Issuer | 172.16.10.121
-411 | ACME-Provision |
-412 | ACME-Server | 172.16.10.122
-413 | ACME-Console | 172.16.10.123
-414 | ACME-Cartridge | 172.16.10.124
-
-root@ACME-Issuer:/opt/acme# tree
-.
-|-- acme
-|   |-- __init__.py
-|   |-- cert.py
-|   `-- crypto.py
-|-- lib.tar.gz
-`-- tests
-    |-- test_cert.py
-    `-- test_crypto.py
+I accidentally overwrote the OG file :P
