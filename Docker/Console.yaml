@@ -1,0 +1,26 @@
+# ACME-Console (Proxmox CT 413)
+# Console identity: signing and encryption key pairs, both update certs.
+name: acme-phase0
+
+services:
+  console:
+    image: acme-phase0:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    container_name: acme-console
+    hostname: acme-console
+    networks: [acme-net]
+    volumes:
+      - console-identity:/var/lib/acme-device
+
+networks:
+  acme-net:
+    name: acme-net
+
+volumes:
+  console-identity:

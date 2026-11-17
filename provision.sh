@@ -11,11 +11,24 @@
 #   - ./provision.sh status                show every device and the registry
 #   - Override container IDs with ISSUER=, STATION=, SERVER=, CONSOLE=, CARTRIDGE=.
 #   - Ignore network air-gap by adding: ISSUER_FLAGS=--allow-network
+# Proxmox (default):   ./provision.sh ...           containers 410-414
+# Docker:              RUNTIME=docker ./provision.sh ...
+#                      containers acme-issuer, acme-provision, acme-server,
+#                      acme-console, acme-cartridge (see docker/*.yaml)
 # ===================================================================
 set -euo pipefail
 
-ISSUER=${ISSUER:-410}; STATION=${STATION:-411}; SERVER=${SERVER:-412}
-CONSOLE=${CONSOLE:-413}; CARTRIDGE=${CARTRIDGE:-414}
+RUNTIME=${RUNTIME:-pct}
+case "$RUNTIME" in
+  pct)
+    ISSUER=${ISSUER:-410}; STATION=${STATION:-411}; SERVER=${SERVER:-412}
+    CONSOLE=${CONSOLE:-413}; CARTRIDGE=${CARTRIDGE:-414} ;;
+  docker)
+    ISSUER=${ISSUER:-acme-issuer}; STATION=${STATION:-acme-provision}
+    SERVER=${SERVER:-acme-server}; CONSOLE=${CONSOLE:-acme-console}
+    CARTRIDGE=${CARTRIDGE:-acme-cartridge} ;;
+  *) echo "RUNTIME must be pct or docker" >&2; exit 1 ;;
+esac
 ISSUER_FLAGS=${ISSUER_FLAGS:-}
 BIN=/opt/acme/bin
 TMP=$(mktemp -d)
@@ -23,15 +36,21 @@ cleanup() { find "$TMP" -type f -exec shred -u {} + 2>/dev/null || true; rm -rf 
 trap cleanup EXIT
 
 say() { printf '\n== %s\n' "$*"; }
-ct()  { local id=$1; shift; pct exec "$id" -- "$@"; }
+ct()  { local id=$1; shift
+        if [ "$RUNTIME" = docker ]; then docker exec "$id" "$@"
+        else pct exec "$id" -- "$@"; fi; }
+pull() { if [ "$RUNTIME" = docker ]; then docker cp -q "$1:$2" "$3"
+         else pct pull "$1" "$2" "$3"; fi; }
+push() { if [ "$RUNTIME" = docker ]; then docker cp -q "$2" "$1:$3"
+         else pct push "$1" "$2" "$3"; fi; }
 
 # carry SRC_ID:SRC_DIR to DST_ID:DST_DIR (replacing DST_DIR)
 carry() {
   local src=$1 sdir=$2 dst=$3 ddir=$4
   ct "$src" tar cf /srv/xfer.tar -C "$sdir" .
-  pct pull "$src" /srv/xfer.tar "$TMP/xfer.tar"
+  pull "$src" /srv/xfer.tar "$TMP/xfer.tar"
   ct "$src" shred -u /srv/xfer.tar
-  pct push "$dst" "$TMP/xfer.tar" /srv/xfer.tar
+  push "$dst" "$TMP/xfer.tar" /srv/xfer.tar
   shred -u "$TMP/xfer.tar"
   ct "$dst" sh -c "rm -rf $ddir && mkdir -p $ddir && tar xf /srv/xfer.tar -C $ddir --no-same-owner && shred -u /srv/xfer.tar"
 }
@@ -109,5 +128,5 @@ case "${1:-}" in
     done
     say "Station";  ct "$STATION" $BIN/acme-station list || true
     say "Registry"; ct "$SERVER" $BIN/acme-registry list || true ;;
-  *) sed -n '2,12p' "$0"; exit 1 ;;
+  *) sed -n '2,17p' "$0"; exit 1 ;;
 esac

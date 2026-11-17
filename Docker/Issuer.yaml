@@ -1,0 +1,23 @@
+# ACME-Issuer (Proxmox CT 410)
+# Offline issuer: ACME issuing key, primary and backup update keys.
+# No network interface at all, so acme-issuer runs without --allow-network.
+name: acme-phase0
+
+services:
+  issuer:
+    image: acme-phase0:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    container_name: acme-issuer
+    hostname: acme-issuer
+    network_mode: none
+    volumes:
+      - issuer-data:/var/lib/acme-issuer
+
+volumes:
+  issuer-data:

@@ -1,0 +1,23 @@
+# ACME-Cartridge (Proxmox CT 414)
+# Cartridge identity: signing key only, injected by the station.
+# No network: the console link will be serial, not IP.
+name: acme-phase0
+
+services:
+  cartridge:
+    image: acme-phase0:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    container_name: acme-cartridge
+    hostname: acme-cartridge
+    network_mode: none
+    volumes:
+      - cartridge-identity:/var/lib/acme-device
+
+volumes:
+  cartridge-identity:

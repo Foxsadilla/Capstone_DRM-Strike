@@ -1,0 +1,23 @@
+# ACME-Provision (Proxmox CT 411)
+# Manufacturing and provisioning station: sign requests in, certificates out.
+# Generates cartridge keys, so it has no network.
+name: acme-phase0
+
+services:
+  provision:
+    image: acme-phase0:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    container_name: acme-provision
+    hostname: acme-provision
+    network_mode: none
+    volumes:
+      - station-data:/var/lib/acme-station
+
+volumes:
+  station-data:

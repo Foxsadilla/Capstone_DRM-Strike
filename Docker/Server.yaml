@@ -1,0 +1,28 @@
+# ACME-Server (Proxmox CT 412)
+# Server identity and the device registry. 
+name: acme-phase0
+
+services:
+  server:
+    image: acme-phase0:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    container_name: acme-server
+    hostname: acme-server
+    networks: [acme-net]
+    volumes:
+      - server-identity:/var/lib/acme-device
+      - server-registry:/var/lib/acme-server
+
+networks:
+  acme-net:
+    name: acme-net
+
+volumes:
+  server-identity:
+  server-registry:
