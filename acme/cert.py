@@ -108,7 +108,7 @@ def _is_bytes(x, n) -> bool:
 
 def _check_fields(tbs) -> None:
     if type(tbs) is not dict:
-        raise CertError("MALFORMED", "tbs is not a map")
+        raise CertError("malformed", "tbs is not a map")
 
     keys = set(tbs.keys())
 
@@ -130,7 +130,7 @@ def _check_fields(tbs) -> None:
 
     for is_invalid, error_msg in validation_rules:
         if is_invalid():
-            raise CertError("MALFORMED", error_msg)
+            raise CertError("malformed", error_msg)
     # end
 
 def _loads_strict(data: bytes):
@@ -139,22 +139,22 @@ def _loads_strict(data: bytes):
         obj = cbor2.loads(data)
         ok = cbor2.dumps(obj, canonical=True) == data
     except Exception as e:
-        raise CertError("MALFORMED", "Not valid CBOR") from e
+        raise CertError("malformed", "Not valid CBOR") from e
     if not ok:
-        raise CertError("MALFORMED", "non-deterministic CBOR or trailing data")
+        raise CertError("malformed", "non-deterministic CBOR or trailing data")
     return obj
     # end
 
 def _split(raw: bytes) -> tuple[bytes, bytes]:
     # Split the to be signed and the signature
     if type(raw) is not bytes or not 0 < len(raw) <= MAX_CERT_LEN:
-        raise CertError("MALFORMED", "Bad Length")
+        raise CertError("malformed", "Bad Length")
     env = _loads_strict(raw)
     if type(env) is not list or len(env) != 2:
-        raise CertError("MALFORMED", "envelope")
+        raise CertError("malformed", "envelope")
     tbs, sig = env
     if type(tbs) is not bytes or not _is_bytes(sig, crypto.SIG_LEN):
-        raise CertError("MALFORMED", "envelope")
+        raise CertError("malformed", "envelope")
     return tbs, sig
     # end
 
@@ -167,9 +167,9 @@ def _to_cert(tbs_bytes: bytes, raw: bytes) -> Certificate:
 def _check_validity(cert: Certificate, now: Optional[int]) -> None:
     now = int(time.time()) if now is None else now
     if now < cert.not_before:
-        raise CertError("Not yet valid")
+        raise CertError("not_yet_valid")
     if now > cert.not_after:
-        raise CertError("Expired")
+        raise CertError("expired")
     # end
 
 def load_trust_anchor(raw: bytes, now: Optional[int] = None) -> Certificate:
@@ -178,9 +178,9 @@ def load_trust_anchor(raw: bytes, now: Optional[int] = None) -> Certificate:
     tbs_bytes, sig = _split(raw)
     cert = _to_cert(tbs_bytes, raw)
     if cert.role is not Role.ROOT or cert.issuer != cert.serial:
-        raise CertError("Wrong Role", "Trust anchor must be a self-issued root")
+        raise CertError("wrong_role", "Trust anchor must be a self-issued root")
     if not crypto.verify(cert.sign_pk, SIG_CONTEXT + tbs_bytes, sig):
-        raise CertError("Bad signature")
+        raise CertError("bad_signature")
     _check_validity(cert, now)
     return cert
     # end
@@ -194,12 +194,12 @@ def verify_cert(raw: bytes, anchor: Certificate, expected_role: Role, *, now: Op
         raise ValueError("Anchor must be the root certificate")
     tbs_bytes, sig = _split(raw)
     if not crypto.verify(anchor.sign_pk, SIG_CONTEXT + tbs_bytes, sig):
-        raise CertError("Bad signature")
+        raise CertError("bad_signature")
     cert = _to_cert(tbs_bytes, raw)
     if cert.issuer != anchor.serial:
-        raise CertError("Bad signature", "issuer serial mismatch")
+        raise CertError("bad_signature", "issuer serial mismatch")
     if cert.role is not expected_role:
-        raise CertError("Wrong role", f"Expect {expected_role.name}, got {cert.role.name}")
+        raise CertError("wrong_role", f"Expect {expected_role.name}, got {cert.role.name}")
     _check_validity(cert, now)
     if is_revoked is not None and is_revoked(cert.serial):
         raise CertError("revoked")

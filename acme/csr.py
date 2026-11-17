@@ -38,14 +38,14 @@ class Request:
 
 def _check(body) -> None:
     if type(body) is not dict:
-        raise CertError("MALFORMED", "Request body is not a map")
+        raise CertError("malformed", "Request body is not a map")
     probe = dict(body)
-    if (C.K_NOT_BEFORE, C.K_NOT_AFTER, C.K_ISSUER) & set(probe):
-        raise CertError("MALFORMED", "unkown field")
+    if {C.K_NOT_BEFORE, C.K_NOT_AFTER, C.K_ISSUER} & set(probe):
+        raise CertError("malformed", "unkown field")
     probe.update({C.K_NOT_BEFORE: 0, C.K_NOT_AFTER: 0, C.K_ISSUER: bytes(C.SERIAL_LEN)})
     C._check_fields(probe)
     if body[C.K_ROLE] not in REQUESTABLE:
-        raise CertError("Wrong role", "Role cannot be requested")
+        raise CertError("wrong_role", "Role cannot be requested")
     # end
 
 def make_csr(sign_sk: bytes, *, serial: bytes, role: Role, model: str, enc_pk: Optional[bytes] = None) -> bytes:
@@ -60,14 +60,14 @@ def make_csr(sign_sk: bytes, *, serial: bytes, role: Role, model: str, enc_pk: O
 def parse_csr(raw: bytes) -> Request:
     # Parse a request and verify its proof-of-possesion signature
     if type(raw) is not bytes or not 0 < len(raw) <= MAX_CSR_LEN:
-        raise CertError("MALFORMED", "Bad length")
+        raise CertError("malformed", "Bad length")
     # Envelope, not environment
     env = C._loads_strict(raw)
     if (type(env) is not list or len(env) != 2 or type (env[0]) is not bytes or type(env[1]) is not bytes or len(env[1]) != crypto.SIG_LEN):
-        raise CertError("MALFORMED", "envelope")
+        raise CertError("malformed", "envelope")
     body = C._loads_strict(env[0])
     _check(body)
     if not crypto.verify(body[C.K_SIGN_PK], SIG_CONTEXT + env[0], env[1]):
-        raise CertError("Bad Signature", "Proof of Possesion Failed")
+        raise CertError("bad_signature", "Proof of Possesion Failed")
     return Request(serial=body[C.K_SERIAL], role=Role(body[C.K_ROLE]), model=body[C.K_MODEL], sign_pk=body[C.K_SIGN_PK], enc_pk=body.get(C.K_ENC_PK))
     # end

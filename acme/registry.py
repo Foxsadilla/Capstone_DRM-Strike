@@ -37,7 +37,7 @@ class RegError(Exception):
 
 class Registry:
     def __init__(self, db_path):
-        if str(db_path) != ":memory":
+        if str(db_path) != ":memory:":
             Path(db_path).parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(db_path))
         self.db.row_factory = sqlite3.Row
@@ -55,7 +55,7 @@ class Registry:
                 if e.reason != "wrong_role":
                     raise
         if cert is None:            
-            CertError("Wrong Role", "Not a registrable role.")
+            raise CertError("wrong_role", "Not a registrable role.")
         digest = hashlib.sha256(raw).hexdigest()
         row = self.get(cert.serial_hex)
         if row is not None:
@@ -73,7 +73,7 @@ class Registry:
         # end
 
     def get(self, serial_hex: str):
-        return self.db.execute("SELECT + FROM devices WHERE serial = ?", (serial_hex,)).fetchone()
+        return self.db.execute("SELECT * FROM devices WHERE serial = ?", (serial_hex,)).fetchone()
         # end
 
     def is_active(self, serial: bytes) -> bool:

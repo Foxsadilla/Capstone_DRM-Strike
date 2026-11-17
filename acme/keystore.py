@@ -23,7 +23,7 @@ FIRMWARE_CONSTANT = bytes.fromhex("41434d452d4649524d574152452d76312d6b657973746
 DEVICE_ROLES = (Role.SERVER, Role.CONSOLE, Role.CARTRIDGE)
 UPDATE_CERTS = ("update-primary.cert", "update-backup.cert")
 SECRET_FILES = ("device.secret", "sign.key.enc", "enc.key.enc")
-ALL_FILES = SECRET_FILES + ("role", "request.csr", "root.cert", "device-cert") + UPDATE_CERTS
+ALL_FILES = SECRET_FILES + ("role", "request.csr", "root.cert", "device.cert") + UPDATE_CERTS
 
 class KeystoreError(Exception):
     pass
@@ -124,10 +124,10 @@ class DeviceImage:
         return self._p("request.csr").read_bytes()
 
     # Assemble the image
-    def install(self, cert_raw: bytes, root_raw: bytes, update_raw=(), now=None) -> Identity:
+    def install(self, cert_raw: bytes, root_raw: bytes, update_raws=(), now=None) -> Identity:
         # Adds certifcates to a pending image and verfies the result
         if self.state() != "pending":
-            raise KeystoreError(f"image is {self.sate()}, expected pending")
+            raise KeystoreError(f"image is {self.state()}, expected pending")
         role = self.role()
         req = R.parse_csr(self.request())
         anchor = C.load_trust_anchor(root_raw, now=now)

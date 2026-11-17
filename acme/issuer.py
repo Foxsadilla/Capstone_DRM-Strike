@@ -22,7 +22,7 @@ from .cert import CertError, Role
 DAY = 86400
 DEFAULT_HOME = "/var/lib/acme-issuer"
 
-class IssueError(Exception):
+class IssuerError(Exception):
     pass
 
 # ===================================================================
@@ -41,7 +41,7 @@ def require_air_gap(allow_network: bool) -> None:
         return
     msg = f"Network interfece(s) currently present: {','.join(nics)}"
     if not allow_network:
-        raise IssueError(msg + " > The issuer needs to be air-gapped; remove the interface or bypass by adding: --allow-network")
+        raise IssuerError(msg + " > The issuer needs to be air-gapped; remove the interface or bypass by adding: --allow-network")
         
     print(f"UPDATE: {msg}; Now continuing because of the inclusion of --allow-network", file=sys.stderr)
     # end
@@ -62,10 +62,10 @@ def _write_new(path: Path, data: bytes, mode: int) -> None:
 
 def _read_key(path: Path) -> bytes:
     if path.stat().st_mode & 0o077:
-        raise IssueError(f"{path} is readable by other, fix it's permissions!")
+        raise IssuerError(f"{path} is readable by other, fix it's permissions!")
     key = path.read_bytes()
     if len(key) != crypto.SIGN_PK_LEN:
-        raise IssueError(f"{path} is not a valid key file...")
+        raise IssuerError(f"{path} is not a valid key file...")
     return key
     # end
 
@@ -108,14 +108,14 @@ class Issuer:
 
     def _anchor(self, now=None) -> C.Certificate:
         if not self.root_cert.exists():
-            raise IssueError("no root yet! run init-root")
+            raise IssuerError("no root yet! run init-root")
         return C.load_trust_anchor(self.root_cert.read_bytes(), now=now)
         # end
 
     # Generate the root:
     def init_root(self, days: int, now=None) -> C.Certificate:
         if self.root_key.exists() or self.root_cert.exists():
-            raise IssueError("Root already exists, will not overwrite")
+            raise IssuerError("Root already exists, will not overwrite")
         now = int(time.time()) if now is None else now
         sk, _ = crypto.sign_keygen()
         raw = C.issue_root(sk, serial=self._fresh_serial(), not_before=now, not_after=now + days * DAY)
@@ -131,9 +131,9 @@ class Issuer:
         now = int(time.time()) if now is None else now
         anchor = self._anchor(now)
         root_sk = _read_key(self.root_key)
-        names = {"primary", "backup"}
+        names = ("primary", "backup")
         if any((self.update_dir / f"{n}.key").exists() for n in names):
-            raise IssueError("Update kesy already exist; not overwriting.")
+            raise IssuerError("Update kesy already exist; not overwriting.")
         out = []
 
         for name in names:
@@ -154,7 +154,7 @@ class Issuer:
         req = R.parse_csr(csr_raw)
         log = self.issued()
         if any(e["serial"] == req.serial.hex() for e in log):
-            raise IssueError(f"serial {req.serial.hex()} was already issued")
+            raise IssuerError(f"serial {req.serial.hex()} was already issued")
         not_after = min(now + days * DAY, anchor.not_after)
         raw = C.issue_cert(_read_key(self.root_key), anchor.serial,
                            serial=req.serial, role=req.role, model=req.model,
@@ -171,7 +171,7 @@ class Issuer:
         for path in sorted(inbox.glob("*.csr")):
             try:
                 raw, entry = self.sign_request(path.read_bytes(), days, now)
-            except (CertError, IssueError) as e:
+            except (CertError, IssuerError) as e:
                 failed.append((path.name, str(e)))
                 continue
             (outbox / f"{entry['serial']}.cert").write_bytes(raw)
@@ -185,7 +185,7 @@ class Issuer:
     def export_public(self, dest) -> list[str]:
         dest = Path(dest)
         if not self.root_cert.exists():
-            raise IssueError("no root yet; run init-root first")
+            raise IssuerError("no root yet; run init-root first")
         dest.mkdir(parents=True, exist_ok=True)
         files = [self.root_cert] + [self.update_dir / f"{n}.cert"
                                     for n in ("primary", "backup")]
@@ -286,7 +286,7 @@ def main(argv=None) -> int:
         elif a.cmd == "list":
             for e in iss.issued():
                 print(f"{e['serial']}  {e['role']:<9} {e['model']}")
-    except (IssueError, CertError, OSError) as e:
+    except (IssuerError, CertError, OSError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
     return 0
