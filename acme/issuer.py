@@ -85,7 +85,7 @@ class Issuer:
         return [json.loads(l) for l in self.log.read_text().splitlines() if l]
         # end
 
-    def _record(self, raw: butes, c: C.Certificate) -> dict:
+    def _record(self, raw: bytes, c: C.Certificate) -> dict:
         entry = {"serial": c.serial_hex, "role": c.role.name.lower(),
                  "model": c.model, "not_before": c.not_before,
                  "not_after": c.not_after, "issued_at": int(time.time()),
@@ -165,25 +165,131 @@ class Issuer:
         # end
 
     def sign_dir(self, inbox, outbox, days: int, now=None):
-        inbox, outbox = Path(inbox)
-        
+        inbox, outbox = Path(inbox), Path(outbox)
+        outbox.mkdir(parents=True, exist_ok=True)
+        ok, failed = [], []
+        for path in sorted(inbox.glob("*.csr")):
+            try:
+                raw, entry = self.sign_request(path.read_bytes(), days, now)
+            except (CertError, IssueError) as e:
+                failed.append((path.name, str(e)))
+                continue
+            (outbox / f"{entry['serial']}.cert").write_bytes(raw)
+            with open(outbox / "manifest.jsonl", "a") as f:
+                f.write(json.dumps(entry, sort_keys=True) + "\n")
+            ok.append((path.name, entry))
+        return ok, failed
+
         # end
 
     def export_public(self, dest) -> list[str]:
+        dest = Path(dest)
+        if not self.root_cert.exists():
+            raise IssueError("no root yet; run init-root first")
+        dest.mkdir(parents=True, exist_ok=True)
+        files = [self.root_cert] + [self.update_dir / f"{n}.cert"
+                                    for n in ("primary", "backup")]
+        out = []
+        for src in files:
+            if src.exists():
+                name = src.name if src is self.root_cert else f"update-{src.name}"
+                (dest / name).write_bytes(src.read_bytes())
+                out.append(name)
+        return out
         # end
 
 # ===================================================================
 # Description Display
 
 def describe(raw: bytes) -> dict:
+    # For display, decodes a cert/request 
+    env = C._loads_strict(raw)
+    if type(env) is not list or len(env) != 2 or type(env[0]) is not bytes:
+        raise CertError("malformed", "envelope")
+    b = C._loads_strict(env[0])
+    if type(b) is not dict:
+        raise CertError("malformed", "body")
+    kind = "certificate" if C.K_ISSUER in b else "request"
+    d = {"type": kind, "bytes": len(raw)}
+    names = {C.K_SERIAL: "serial", C.K_ROLE: "role", C.K_MODEL: "model",
+             C.K_SIGN_PK: "sign_pk", C.K_ENC_PK: "enc_pk",
+             C.K_NOT_BEFORE: "not_before", C.K_NOT_AFTER: "not_after",
+             C.K_ISSUER: "issuer"}
+    for k, name in names.items():
+        if k not in b:
+            continue
+        v = b[k]
+        if type(v) is bytes:
+            v = v.hex()
+        elif k == C.K_ROLE and v in tuple(Role):
+            v = Role(v).name.lower()
+        elif k in (C.K_NOT_BEFORE, C.K_NOT_AFTER) and type(v) is int:
+            v = time.strftime("%Y-%m-%d %H:%M:%SZ", time.gmtime(v))
+        d[name] = v
+    return d
     # end
 
 def _print(d: dict) -> None:
+    for k, v in d.items():
+        print(f" {k:<11} {v}")
     # end
 
 # ===================================================================
 # CLI print ou tof the issueing process for reference
 def main(argv=None) -> int:
+    p = argparse.ArgumentParser(prog="acme-issuer", description="Offline ACME certificate issuer")
+    p.add_argument("--home", default=os.environ.get("ACME_ISSUER_HOME", DEFAULT_HOME))
+    p.add_argument("--allow-network", action="store_true", help="development only: run with a network interface")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("init-root", help="0.1 generate and self-sign Cert_ACME")
+    s.add_argument("--days", type=int, default=7300)
+    s = sub.add_parser("init-update-keys", help="0.2 generate primary and backup update keys")
+    s.add_argument("--days", type=int, default=3650)
+    s = sub.add_parser("sign", help="0.4 sign every *.csr in INBOX")
+    s.add_argument("inbox")
+    s.add_argument("outbox")
+    s.add_argument("--days", type=int, default=3650)
+    s = sub.add_parser("export-public", help="copy root and update certificates to DEST")
+    s.add_argument("dest")
+    s = sub.add_parser("show", help="decode a certificate or request")
+    s.add_argument("file", nargs="+")
+    sub.add_parser("list", help="list every certificate issued")
+    a = p.parse_args(argv)
+    iss = Issuer(a.home)
+    os.umask(0o077 if a.cmd in ("init-root", "init-update-keys") else 0o022)
+    try:
+        if a.cmd in ("init-root", "init-update-keys", "sign"):
+            require_air_gap(a.allow_network)
+        if a.cmd == "init-root":
+            c = iss.init_root(a.days)
+            print(f"Root created: {iss.root_cert}")
+            _print(describe(c.raw))
+        elif a.cmd == "init-update-keys":
+            for c in iss.init_update_keys(a.days):
+                print(f"Update key created: {c.model}")
+                _print(describe(c.raw))
+        elif a.cmd == "sign":
+            ok, failed = iss.sign_dir(a.inbox, a.outbox, a.days)
+            for name, e in ok:
+                print(f"SIGNED   {name}: {e['role']} {e['model']} {e['serial']}")
+            for name, why in failed:
+                print(f"REJECTED {name}: {why}", file=sys.stderr)
+            print(f"{len(ok)} signed, {len(failed)} rejected")
+            return 1 if failed else 0
+        elif a.cmd == "export-public":
+            for name in iss.export_public(a.dest):
+                print(f"{a.dest}/{name}")
+        elif a.cmd == "show":
+            for f in a.file:
+                print(f)
+                _print(describe(Path(f).read_bytes()))
+        elif a.cmd == "list":
+            for e in iss.issued():
+                print(f"{e['serial']}  {e['role']:<9} {e['model']}")
+    except (IssueError, CertError, OSError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    return 0
     # end
 
 if __name__ == "__main__":
