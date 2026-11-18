@@ -20,20 +20,6 @@
               "icon": "lucide-file",
               "title": "README"
             }
-          },
-          {
-            "id": "c2827ccd1250925c",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "cartridge-runbook.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "cartridge-runbook"
-            }
           }
         ]
       }
@@ -97,8 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "be5128089f547d80",
@@ -205,21 +190,21 @@
   },
   "active": "370d10049d0654d5",
   "lastOpenFiles": [
-    "Container/debian-13-standard_13.6.yaml",
-    "Container/debian-13-standard-docker.yaml.txt",
-    "Container/New Text Document.txt",
-    "SCP/Scripts/Server/server.py",
-    "SCP/Scripts/Server/provision.py",
-    "SCP/Scripts/Server/db.py",
-    "SCP/Scripts/platform-host/software-host.py",
-    "SCP/Scripts/cartridge/cartridge-daemon.py",
-    "SCP/Scripts/Server",
-    "SCP/Scripts/platform-host",
-    "SCP/Scripts/cartridge",
+    "docker/Server.yaml",
+    "docker/Provision.yaml",
+    "docker/Issuer.yaml",
+    "docker/Console.yaml",
+    "docker/Cartridge.yaml",
+    "acme/cert.py",
+    "tests/test_provisioning.py",
+    "tests/test_issuer.py",
+    "tests/test_crypto.py",
+    "tests/test_cert.py",
+    "provision.sh",
+    "README.md",
     "SCP/README.md",
     "TMP/README.md",
     "cartridge-runbook.md",
-    "README.md",
     "Misc/Old-README.md"
   ]
 }
