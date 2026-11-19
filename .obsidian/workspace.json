@@ -83,8 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "1411d121102c5986",
@@ -189,7 +188,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "0b5c04fba08a7616",
+  "active": "9ad7e43c6da57797",
   "lastOpenFiles": [
     "Untitled.md",
     "README.md",
