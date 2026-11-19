@@ -8,6 +8,12 @@
 | acme-server    | Server identity and device registry           |
 | acme-console   | Console identity; signing and encryption keys |
 | acme-cartridge | cartridge identity; signing key only          |
+## Notes
+- **HMAC-based Key Derivation Function (HKDF)**: Defined in RFC 5869, it is a cryptographic standard used to derive one or more strong, independent keys from shared secret material (*Python:* `hkdf()`).
+	- **Hash-based Message Authentication Code (HMAC)**:  It is a cryptographic technique that combines a secret key with a hash function (such as SHA-256) to verify both the data integrity and authenticity of a message.
+- **Diffie-Hellman (DH)**: a cryptographic method that lets two parties safely generate a shared secret key over an insecure public network without ever transmitting the key itself (*Python*: `dh()`).
+- **To-be-Signed (TBS)**: Data, a message, or a certificate has a digital signature attached to verify its origin and integrity
+
 ## Files
 ### Host View
 ```
