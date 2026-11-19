@@ -14,12 +14,14 @@
 	- **Hash-based Message Authentication Code (HMAC)**:  It is a cryptographic technique that combines a secret key with a hash function (such as SHA-256) to verify both the data integrity and authenticity of a message.
 	- **HKDF-SHA256**: HKDF using the SHA-256 cryptographic hash function to derive strong, fixed- or variable-length secret keys from initial keying material.
 - **Diffie-Hellman (DH)**: a cryptographic method that lets two parties safely generate a shared secret key over an insecure public network without ever transmitting the key itself (*Python*: `dh()`).
-- **X25519**: An elliptic-curve Diffie-Hellman (ECDH) key exchange function that uses the curve25519 elliptic curve and 32-byte keys to let two parties establish a shared secret over an insecure channel.
+- **X25519**: An *elliptic-curve Diffie-Hellman (ECDH)* key exchange function that uses the curve25519 elliptic curve and 32-byte keys to let two parties establish a shared secret over an insecure channel.
 - **Advanced Encryption Standard in Galois/Counter Mode (AES-GCM)**: 
 	- *AES* - A trusted symmetric-key block cipher that locks and unlocks data using 128, 192, or 256 bit secret keys.
 	- *GCM* - A mdoe of operation that turns AES into a fast stream cipher (counter mode) while adding a universal hashing function (Galois/GHASH) over a binary finite field to generate an authentication tag.
 	- **AES-256-GCM**: using a 256-bit key to provide both confidentiality and data integrity. Encrypts data while generating an authentication tag to detect tampering
 - **To-be-Signed (TBS)**: Data, a message, or a certificate has a digital signature attached to verify its origin and integrity
+- **Binary Large Object (Blob)**: An opaque block of raw bytes (e.g., crypto key, encrypted payload, or large data packet) treated without structural parsing by the storage or transport layer.
+- **Concise Binary Object Representation (CBOR):** A binary data serialization format designed to be small, fast to process, and schema free while sharing a data model similar to JSON.
 ### Procedures
 - **How does Phase 0 devices encrypt traffic?**
 	- The main purpose of phase 0 is to create and setup the keys and certs that will be used for the encryption of the traffic sent during the future phases.
@@ -30,10 +32,12 @@
 	- **Agree**: Using the X25519 Algorithm, two parties make a shared secret
 	- **Derive**: Using the HKDF-SHA256 Algorithm, turns a secret into a proper key
 	- **Seal**: Using the AES-256-GCM Algorithm, encrypts and detects tampering
-- **Step 1**
+- **Step 1: Sign**
 	- Using Ed25519, a **private key (SK)** makes a 64-byte signature and anyone holding the 32 byte **public key (PK)** can check it.
 		- *Note,* in phase 0, secret key != SK, for clarification. private and secret keys aren't the same thing.
 	- The purpose of this is that the signatures give authenticity, not secrecy. A cert is not a secret; what matters is only the official ACME could have made this.
+	- In `csr.py` the device will sign its own request with its new key for **proof of possession**, the device is proving it actually holds the SK matching the PK it wants certified.
+	- *Code Example:*
 ``` python
 # cert.py, issue_cert(): ACME signs a certificate
 sig = crypto.sign(issuer_sk, SIG_CONTEXT + tbs)
@@ -42,8 +46,68 @@ sig = crypto.sign(issuer_sk, SIG_CONTEXT + tbs)
 if not crypto.verify(anchor.sign_pk, SIG_CONTEXT + tbs_bytes, sig):
     raise CertError("bad_signature")
 ```
-
-
+- **Step 2: Agree**
+	- Using X25519, each side combines its private key with the other side's PK, and both get the same 32-byte secret. Nobody watching the PK can compute this.
+	- This lets two devices create a share encryption key without sending the key
+	- This exists in `crypto.dh()` but is not in used in Phase 0 yet because nothing calls it yet. Only the console gets an X25519 key par (`enc_pk` in its cert), because it'll eventually encrypt licenses to the console.
+	- It uses an all zero check to block any malicious low order PK that would force a predictable secret. The result must always go through `hkdf()`, because a raw DH output isn’t a uniformly random key.
+	- *Code Example:*
+``` python
+# crypto.py: the safety checks
+if shared == bytes(32):
+    raise CryptoError(f"{ECDH_Key} produced an all-zero secret!")
+```
+- **Step 3: Derive**
+	- Using HKDF-SHA256, takes **input key material (IKM)**, a salt and an info label, and outputs a strong key
+	- The info label is used to bind the key to one purpose and one device, so the same secret cannot produce interchangeable keys
+	- This happens in `keystore.kek()` where it builds the **key-encryption key (KEK)**
+	- *Code Example:*
+``` python
+crypto.hkdf(secret, FIRMWARE_CONSTANT, b"ACME-KEK-v1" + bytes([int(role)]) + serial)
+#           ^ikm     ^salt              ^info: version + role + this device's serial
+```
+- **Step 4: Seal**
+	- Using AES-256-GCM, authenticated encryption happens. Each call uses a fresh random 12-byte nonce and outputs: `nonce || ciphertext || 16-byte tag`. If one bit changes the decryption will fail.
+	- This will provide confidentiality and integrity with extra **AAD (Additional Associated Data)** that isn't encrypted but is checked which ties a cipher text to its context so that an attacker cannot take a valid ciphertext and move, replay, or re-assign it somewhere else.
+	- `_aad(serial, "sign")` is used to mean a sign-key blob cannot be swapped with the enc-key blob or copied to another device (There is a test for this).
+	- The `keystore.create()` encrypts private keys before writing them to the disk:
+``` python
+_write(self._p("sign.key.enc"), crypto.aead_encrypt(kek, sign_sk, _aad(serial, "sign")), 0o600)
+```
+#### Key Storage
+- At the boot, the `load()` repeats the following backwards, decrypts, and checks the decrypted key matches the cert (`sign_public(sign_sk) != cert.sign_pk`)
+```
+device.secret (32 random bytes) ─┐
+FIRMWARE_CONSTANT (in code) ─────┼─ HKDF ─▶ KEK ─ AES-256-GCM ─▶ sign.key.enc
+role + serial ───────────────────┘                    (aad: serial + "sign")
+```
+- The purpose of this is obfuscation, not protection. Both inputs to the KEK are on the device so anyone who controls the device can recompute it. The design relies instead on unique per-device keys + server-side detection and revocation, where stealing one key gives you one identity which the server can ban.
+#### Device Trust
+- *Uses “Form, Signer, Role, Time, Revoked”:*
+	- **Form:** Valid CBOR, correct fields (`_split,`, `_check_fields`)
+	- **Signer:** Signed by the ACME root, with matching serial
+	- **Role:** The role is the one expected (mandatory argument)
+	- **Time:** Inside `not_before` - `not_after`
+	- **Revocked:** Not on the revocation list
+#### Design Attributes
+- One trust anchor (ACME Root)
+	- Simple verification, only on catastrophic key and it is kept offline
+- Per-device keys
+	- One extraction for one revocable identity, not all devices
+- Roles in certs
+	- Stolen keys cannot be used to spoof as a console or server
+- Separate sign and encrypt keys on the console
+	- Reusing one key for two purposes has the potential for cross-protocol attacks
+- Update key separate from issuing key
+	- Firmware signing will never touch that key that mints the identities
+- Backup update key
+	- Recovery path if the primary update key gets leaked
+- Context strings (e.g., "`ACME-CERT-v1", "ACME-CSR-v1"`)
+	- A signature made for one purpose cannot be reused as another
+- CBOR instead of alternative (e.g., X.509)
+	- Simple for a cartridge chip
+- Ed25519/X25519
+	- Makes small keys. constant time code and has no parameters to get wrong
 ## Files
 ### Host View
 ```
