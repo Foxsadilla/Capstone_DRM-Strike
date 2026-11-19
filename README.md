@@ -9,10 +9,40 @@
 | acme-console   | Console identity; signing and encryption keys |
 | acme-cartridge | cartridge identity; signing key only          |
 ## Notes
+### Definitions
 - **HMAC-based Key Derivation Function (HKDF)**: Defined in RFC 5869, it is a cryptographic standard used to derive one or more strong, independent keys from shared secret material (*Python:* `hkdf()`).
 	- **Hash-based Message Authentication Code (HMAC)**:  It is a cryptographic technique that combines a secret key with a hash function (such as SHA-256) to verify both the data integrity and authenticity of a message.
+	- **HKDF-SHA256**: HKDF using the SHA-256 cryptographic hash function to derive strong, fixed- or variable-length secret keys from initial keying material.
 - **Diffie-Hellman (DH)**: a cryptographic method that lets two parties safely generate a shared secret key over an insecure public network without ever transmitting the key itself (*Python*: `dh()`).
+- **X25519**: An elliptic-curve Diffie-Hellman (ECDH) key exchange function that uses the curve25519 elliptic curve and 32-byte keys to let two parties establish a shared secret over an insecure channel.
+- **Advanced Encryption Standard in Galois/Counter Mode (AES-GCM)**: 
+	- *AES* - A trusted symmetric-key block cipher that locks and unlocks data using 128, 192, or 256 bit secret keys.
+	- *GCM* - A mdoe of operation that turns AES into a fast stream cipher (counter mode) while adding a universal hashing function (Galois/GHASH) over a binary finite field to generate an authentication tag.
+	- **AES-256-GCM**: using a 256-bit key to provide both confidentiality and data integrity. Encrypts data while generating an authentication tag to detect tampering
 - **To-be-Signed (TBS)**: Data, a message, or a certificate has a digital signature attached to verify its origin and integrity
+### Procedures
+- **How does Phase 0 devices encrypt traffic?**
+	- The main purpose of phase 0 is to create and setup the keys and certs that will be used for the encryption of the traffic sent during the future phases.
+	- The encrypted session of these future phases will be using: `X25519 + HKDF + AES-GCM`
+#### Process of Sign, Agree, Derive, & Seal
+- The main process of: sign, agree, derive, and seal, is done within the `crytpo.py` file so the other files do not need to import the crypto library.
+	- **Sign**: Using the Ed25519 Algorithm, proves who made something
+	- **Agree**: Using the X25519 Algorithm, two parties make a shared secret
+	- **Derive**: Using the HKDF-SHA256 Algorithm, turns a secret into a proper key
+	- **Seal**: Using the AES-256-GCM Algorithm, encrypts and detects tampering
+- **Step 1**
+	- Using Ed25519, a **private key (SK)** makes a 64-byte signature and anyone holding the 32 byte **public key (PK)** can check it.
+		- *Note,* in phase 0, secret key != SK, for clarification. private and secret keys aren't the same thing.
+	- The purpose of this is that the signatures give authenticity, not secrecy. A cert is not a secret; what matters is only the official ACME could have made this.
+``` python
+# cert.py, issue_cert(): ACME signs a certificate
+sig = crypto.sign(issuer_sk, SIG_CONTEXT + tbs)
+
+# cert.py, verify_cert(): a device checks it against the root's public key
+if not crypto.verify(anchor.sign_pk, SIG_CONTEXT + tbs_bytes, sig):
+    raise CertError("bad_signature")
+```
+
 
 ## Files
 ### Host View
