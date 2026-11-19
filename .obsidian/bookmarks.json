@@ -1,0 +1,77 @@
+{
+  "items": [
+    {
+      "type": "group",
+      "ctime": 1790961151431,
+      "items": [
+        {
+          "type": "folder",
+          "ctime": 1793640559313,
+          "path": "CYB4200 - Digital Forensics/Assignments/Discussion Posts",
+          "title": "Cyb Disc"
+        },
+        {
+          "type": "folder",
+          "ctime": 1793640546333,
+          "path": "ANTH 1102 - Cultural Anthropology/Files/Discussion Posts",
+          "title": "Anthro Disc"
+        },
+        {
+          "type": "group",
+          "ctime": 1794610614828,
+          "items": [
+            {
+              "type": "file",
+              "ctime": 1794610605783,
+              "path": "CYB 4800 - Capstone/_Capstone_DRM-Strike/ACME-Phase0-Runbook.md"
+            }
+          ],
+          "title": "Capstone"
+        },
+        {
+          "type": "file",
+          "ctime": 1790961144600,
+          "path": "_Misc/Weekly HW Outline.md",
+          "title": "HW"
+        },
+        {
+          "type": "file",
+          "ctime": 1790961222704,
+          "path": "CYB 4800 - Capstone/Capstone Individual Log.md",
+          "title": "Capstone Log"
+        },
+        {
+          "type": "file",
+          "ctime": 1790961239912,
+          "path": "CYB 4800 - Capstone/_Capstone Project Details.md",
+          "title": "Capstone Details"
+        }
+      ],
+      "title": "Skool"
+    },
+    {
+      "type": "group",
+      "ctime": 1790961166704,
+      "items": [
+        {
+          "type": "file",
+          "ctime": 1790961202320,
+          "path": "_Misc/Home Lab/Cluster Server Notes.md",
+          "title": "Anne's Cluster Fuck"
+        },
+        {
+          "type": "file",
+          "ctime": 1790961175112,
+          "path": "_Misc/HIP Notes/Notes/_Misc/HIP-capstone-practice.md",
+          "title": "HIP Capstone"
+        },
+        {
+          "type": "folder",
+          "ctime": 1791171327870,
+          "path": "_Misc/Home Lab"
+        }
+      ],
+      "title": "Serber"
+    }
+  ]
+}

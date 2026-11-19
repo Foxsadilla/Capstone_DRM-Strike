@@ -1,3 +1,6 @@
 {
-  "showRibbon": true
+  "accentColor": "#6eb95f",
+  "cssTheme": "Blue Topaz",
+  "showRibbon": true,
+  "theme": "obsidian"
 }

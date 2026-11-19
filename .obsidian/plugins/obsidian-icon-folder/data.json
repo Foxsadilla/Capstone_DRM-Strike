@@ -1,0 +1,48 @@
+{
+  "settings": {
+    "migrated": 6,
+    "iconPacksPath": ".obsidian/icons",
+    "fontSize": 16,
+    "emojiStyle": "native",
+    "iconColor": null,
+    "recentlyUsedIcons": [
+      "❕",
+      "LiBrain",
+      "LiScale",
+      "LiPyramid",
+      "LiAperture"
+    ],
+    "recentlyUsedIconsSize": 5,
+    "rules": [],
+    "extraMargin": {
+      "top": 0,
+      "right": 4,
+      "bottom": 0,
+      "left": 0
+    },
+    "iconInTabsEnabled": false,
+    "iconInTitleEnabled": false,
+    "iconInTitlePosition": "above",
+    "iconInFrontmatterEnabled": false,
+    "iconInFrontmatterFieldName": "icon",
+    "iconColorInFrontmatterFieldName": "iconColor",
+    "iconsBackgroundCheckEnabled": false,
+    "iconsInNotesEnabled": true,
+    "iconsInLinksEnabled": true,
+    "iconIdentifier": ":",
+    "lucideIconPackType": "native",
+    "debugMode": false,
+    "useInternalPlugins": false
+  },
+  "ANTH 1102 - Cultural Anthropology/Files": "LiFiles",
+  "CYB 4800 - Capstone/Files": "LiFiles",
+  "CYB 4010 - Cyber as a Profession/Files": "LiFiles",
+  "CYB4200 - Digital Forensics/Assignments/Labs": "LiMouse",
+  "CYB4200 - Digital Forensics/Files": "LiFiles",
+  "CYB 4800 - Capstone/Capstone Sharepoint": "LiShare",
+  "ANTH 1102 - Cultural Anthropology": "LiPersonStanding",
+  "CYB 4010 - Cyber as a Profession": "LiAperture",
+  "CYB 4800 - Capstone": "LiPyramid",
+  "CYB4200 - Digital Forensics": "LiScale",
+  "PHIL 2400 - Belief and Reality": "LiBrain"
+}

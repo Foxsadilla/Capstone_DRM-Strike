@@ -1,14 +1,98 @@
 {
   "main": {
-    "id": "d1a6e2d715693213",
+    "id": "0c39d45f6e6b48ec",
     "type": "split",
     "children": [
       {
-        "id": "eb65ba15064117b0",
+        "id": "ea2762df93f919cd",
         "type": "tabs",
         "children": [
           {
-            "id": "370d10049d0654d5",
+            "id": "cc2197b7909c286a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "ACME-Phase0-Runbook.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACME-Phase0-Runbook"
+            }
+          },
+          {
+            "id": "f9163cfdf745aa1f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Device.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Device"
+            }
+          },
+          {
+            "id": "44db8755bc88cba9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "ACME-Phase0-Runbook.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACME-Phase0-Runbook"
+            }
+          },
+          {
+            "id": "fff91ae7fe34a086",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "ACME-Phase0-Runbook.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACME-Phase0-Runbook"
+            }
+          },
+          {
+            "id": "25bdacbfb79044f7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Registry.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Registry"
+            }
+          },
+          {
+            "id": "0cecaadaea687386",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "ACME-Phase0-Runbook.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACME-Phase0-Runbook"
+            }
+          },
+          {
+            "id": "0b5c04fba08a7616",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -21,21 +105,22 @@
               "title": "README"
             }
           }
-        ]
+        ],
+        "currentTab": 6
       }
     ],
     "direction": "vertical"
   },
   "left": {
-    "id": "2380a32ed227215b",
+    "id": "f4af999b4be84ace",
     "type": "split",
     "children": [
       {
-        "id": "deda5b3e9cbbeab2",
+        "id": "a048d7a8a1963d07",
         "type": "tabs",
         "children": [
           {
-            "id": "46ed0b4351e2fd57",
+            "id": "9ad7e43c6da57797",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -50,7 +135,7 @@
             }
           },
           {
-            "id": "8abf79397f54c3ec",
+            "id": "007836b22744fbad",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -67,7 +152,7 @@
             }
           },
           {
-            "id": "5a272adf5b466960",
+            "id": "a8b69d4e00d222b7",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -83,23 +168,23 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
-    "id": "be5128089f547d80",
+    "id": "1411d121102c5986",
     "type": "split",
     "children": [
       {
-        "id": "40f3baa4943e9ff6",
+        "id": "9e9bba494f248e9d",
         "type": "tabs",
         "children": [
           {
-            "id": "49538d0b1bbd533b",
+            "id": "8f4f53ac3e7a160a",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "_Docker-Run.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -113,12 +198,12 @@
             }
           },
           {
-            "id": "50b1575c29a314b2",
+            "id": "db13062b20814a75",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "README.md",
+                "file": "_Docker-Run.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -127,7 +212,7 @@
             }
           },
           {
-            "id": "713a4b7044a08c7b",
+            "id": "0ce97ebd77b08276",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -142,7 +227,7 @@
             }
           },
           {
-            "id": "8979b3f07d54f26f",
+            "id": "2820ea016c8e67b7",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -151,17 +236,17 @@
                 "showSearch": false,
                 "searchQuery": ""
               },
-              "icon": "lucide-archive",
-              "title": "All properties"
+              "icon": "lucide-ghost",
+              "title": "all-properties"
             }
           },
           {
-            "id": "4bde8518a6065fee",
+            "id": "eef4279a538e1fa7",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "README.md",
+                "file": "_Docker-Run.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -188,23 +273,14 @@
       "bases:Create new base": false
     }
   },
-  "active": "370d10049d0654d5",
+  "active": "0b5c04fba08a7616",
   "lastOpenFiles": [
-    "docker/Server.yaml",
-    "docker/Provision.yaml",
-    "docker/Issuer.yaml",
-    "docker/Console.yaml",
-    "docker/Cartridge.yaml",
-    "acme/cert.py",
-    "tests/test_provisioning.py",
-    "tests/test_issuer.py",
-    "tests/test_crypto.py",
-    "tests/test_cert.py",
-    "provision.sh",
-    "README.md",
-    "SCP/README.md",
-    "TMP/README.md",
-    "cartridge-runbook.md",
-    "Misc/Old-README.md"
+    "ACME-Phase0-Runbook.md",
+    "Device.md",
+    "_Docker-Run.md",
+    "Station.md",
+    "Registry.md",
+    "keystore.md",
+    "Issuer.md"
   ]
 }
