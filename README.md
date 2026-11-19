@@ -88,7 +88,7 @@ role + serial ───────────────────┘      
 	- **Signer:** Signed by the ACME root, with matching serial
 	- **Role:** The role is the one expected (mandatory argument)
 	- **Time:** Inside `not_before` - `not_after`
-	- **Revocked:** Not on the revocation list
+	- **Revoked:** Not on the revocation list
 #### Design Attributes
 - One trust anchor (ACME Root)
 	- Simple verification, only on catastrophic key and it is kept offline
