@@ -1,13 +1,21 @@
 ## Run Docker
 ### 1. Setup
+(Anne Only:) ` ssh -t user@gui 'cd /home/user/Documents/Capstone_DRM-Strike && exec $SHELL -l'`
 ``` bash
 cd <PATH>
 chmod +x provision.sh bin/*
 
-cd docker
-
+cd ~/Documents/Capstone_DRM-Strike/docker
+docker compose down -v
 docker compose up -d --build
-docker compose ps
+cd ..
+docker exec acme-issuer /opt/acme/bin/acme-issuer init-root
+docker exec acme-issuer /opt/acme/bin/acme-issuer init-update-keys
+sudo ./provision.sh trust
+sudo ./provision.sh server    SERVER-1
+sudo ./provision.sh console   CONSOLE-X1
+sudo ./provision.sh cartridge CART-A1
+cd docker && ./phase0-validations.sh
 
 # Should be 100 passed
 docker exec acme-provision python3 -m pytest -q
