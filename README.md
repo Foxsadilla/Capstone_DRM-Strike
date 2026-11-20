@@ -66,8 +66,8 @@ To run steps 2 to 6 in one go, see [One command](#one-command).
 - Your user in the `docker` group, so no `sudo` is needed: `groups` should list `docker`. If not, run `sudo usermod -aG docker $USER`, then log out and back in.
 - Unix (LF) line endings on every script. A copy edited or checked out on Windows can have Windows (CRLF) endings, which break the scripts with errors like `set: pipefail: invalid option name` or `/usr/bin/env: 'python3\r'`. The repo's `.gitattributes` prevents this for Git checkouts; to fix a copy by hand:
 ``` bash
-sed -i 's/\r$//' provision.sh test-setup.sh docker/*.sh bin/*
-chmod +x provision.sh test-setup.sh docker/*.sh bin/*
+sed -i 's/\r$//' provision.sh demo.sh docker/*.sh bin/*
+chmod +x provision.sh demo.sh docker/*.sh bin/*
 ```
  
 ### 2. Build and Start
@@ -147,7 +147,7 @@ The messages in the first column go to standard error. Keep `2>&1` when saving t
 ### One Command
 `test-setup.sh`, in the project folder, runs steps 2 to 6 from a clean start:
 ``` bash
-./test-setup.sh 2>&1 | tee output.txt
+./demo.sh 2>&1 | tee output.txt
 ```
 - It runs `docker compose down -v` first, so it **deletes the root key and every identity** each time.
 - It expects the project at `~/Documents/Capstone_DRM-Strike`. To use another folder, change `PROJECT_DIR` at the top of the script.
