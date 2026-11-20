@@ -151,9 +151,13 @@ for c in acme-console acme-server acme-cartridge; do
 done
 status acme-console | grep -E 'sign_pk|enc_pk|update certs|private keys'
 
+read -p "Press Enter to continue..."
+
 echo "> Update keys live apart from the issueing key, with diff PK:"
 docker exec acme-issuer ls -l /var/lib/acme-issuer/root /var/lib/acme-issuer/update
 $ISS show /var/lib/acme-issuer/root/root.cert /var/lib/acme-issuer/update/primary.cert | grep -E 'model|sign_pk'
+
+read -p "Press Enter to continue..."
 
 # ===============================
 step "Software Key Storage (AES-256-GCM)"
@@ -164,10 +168,14 @@ docker exec acme-cartridge wc -c /var/lib/acme-device/sign.key.enc
 docker exec acme-cartridge od -An -tx1 /var/lib/acme-device/sign.key.enc
 status acme-cartridge | grep 'private keys'
 
+read -p "Press Enter to continue..."
+
 echo "> Tamper test (copy of /tmp/img):"
 docker exec acme-cartridge cp -r /var/lib/acme-device /tmp/img
 docker exec acme-cartridge python3 -c "
 p='/tmp/img/sign.key.enc'; b=bytearray(open(p,'rb').read()); b[-1]^=1; open(p,'wb').write(b)"
+
+read -p "Press Enter to continue..."
 
 docker exec acme-cartridge /opt/acme/bin/acme-device --home /tmp/img status || true
 docker exec acme-cartridge rm -rf /tmp/img
@@ -184,6 +192,8 @@ sk = crypto.aead_decrypt(kek, (d/'sign.key.enc').read_bytes(), K._aad(cert.seria
 print('recovered key matches certificate:', crypto.sign_public(sk) == cert.sign_pk)
 "
 
+read -p "Press Enter to continue..."
+
 # ===============================
 step "Compact Certificate Format"
 
@@ -197,6 +207,8 @@ for k, v in cbor2.loads(tbs).items():
     print(k, v.hex() if isinstance(v, bytes) else v)
 "
 
+read -p "Press Enter to continue..."
+
 echo "> keys 1 to 9 are version, serial, role, model, signing key, validity (7 and 8), and issuer; key 6 is the console-only encryption key. The whole certificate is well under the 512-byte limit. The parser is strict:"
 docker exec acme-cartridge python3 -c "
 from acme import cert as C
@@ -209,6 +221,8 @@ for name, bad in (('trailing byte', raw + b'\x00'), ('truncated', raw[:-1])):
     except C.CertError as e:
         print(name, '->', e)
 "
+
+read -p "Press Enter to continue..."
 # ===============================
 step "Modern Small Algorithms (Ed25519 and X25519)"
 
@@ -220,7 +234,12 @@ print('X25519 both sides agree:', c.dh(a_sk, b_pk) == c.dh(b_sk, a_pk))
 sk, pk = c.sign_keygen(); s = c.sign(sk, b'hi')
 print('Ed25519 good/tampered:', c.verify(pk, b'hi', s), c.verify(pk, b'ho', s))
 "
+
+read -p "Press Enter to continue..."
+
 docker exec acme-console python3 -c "import nacl, cryptography; print('libsodium binding', nacl.__version__, '/ cryptography', cryptography.__version__)"
+
+read -p "Press Enter to continue..."
 
 # ===============================
 step "Device Registry"
@@ -231,7 +250,11 @@ docker exec acme-server sqlite3 -header -column /var/lib/acme-server/registry.db
   "SELECT serial, role, model, status FROM devices;"
 docker exec acme-server sqlite3 /var/lib/acme-server/registry.db .schema
 
+read -p "Press Enter to continue..."
+
 docker exec acme-server sh -c 'mkdir -p /tmp/bad && echo junk > /tmp/bad/x.cert && /opt/acme/bin/acme-registry import /tmp/bad; echo "exit=$?"; rm -rf /tmp/bad'
+
+read -p "Press Enter to continue..."
 
 # ===================================================================
 # Section 2: Protocols
@@ -245,14 +268,22 @@ echo "> One root line, two update lines:"
 $ISS list
 docker exec acme-issuer ls -l /var/lib/acme-issuer/root /var/lib/acme-issuer/update
 
+read -p "Press Enter to continue..."
+
 echo "> Refuse to overwrite:"
 $ISS init-root; echo "exit=$?"
+
+read -p "Press Enter to continue..."
 
 echo "> Same:"
 $ISS init-update-keys; echo "exit=$?"
 
+read -p "Press Enter to continue..."
+
 echo "> Air-gap guard check via throwawy container (Refuses before generating anything):"
 docker run --rm acme-phase0:latest /opt/acme/bin/acme-issuer init-root; echo "exit=$?"
+
+read -p "Press Enter to continue..."
 
 # ===============================
 step "Device Key Generation (Scratch Image)"
@@ -264,6 +295,8 @@ docker exec acme-console ls -l /tmp/demo
 docker exec acme-console /opt/acme/bin/acme-device --home /tmp/demo status
 docker exec acme-console /opt/acme/bin/acme-issuer show /tmp/demo-out/request.csr
 
+read -p "Press Enter to continue..."
+
 # ===============================
 step "Cert Issuance & Duplicate Rejection"
 
@@ -271,15 +304,22 @@ echo "> Leave a DEMO-CONSOLE entry in the issuer's append-only log, which is har
 docker exec acme-issuer mkdir -p /srv/demo-in
 # Stream through the host instead of docker cp: docker cp keeps the host
 # user's UID, and root in a cap_drop container can't read that mode-600 file.
+
+read -p "Press Enter to continue..."
+
 docker exec acme-console cat /tmp/demo-out/request.csr \
   | docker exec -i acme-issuer sh -c 'cat > /srv/demo-in/demo.csr'
 $ISS sign /srv/demo-in /srv/demo-out
 docker exec acme-issuer sh -c '/opt/acme/bin/acme-issuer show /srv/demo-out/*.cert'
 $ISS sign /srv/demo-in /srv/demo-out; echo "exit=$?"
 
+read -p "Press Enter to continue..."
+
 echo "> Cleaning up demo CSR/Cert files:"
 docker exec acme-console rm -rf /tmp/demo /tmp/demo-out
 docker exec acme-issuer rm -rf /srv/demo-in /srv/demo-out
+
+read -p "Press Enter to continue..."
 
 # ===============================
 step "Image Assembly and Registration (Re-provisioning Cartridge)"
@@ -288,26 +328,39 @@ echo "> Runs the whole flow with a heading per step, erase the cartridge and pro
 docker exec acme-cartridge /opt/acme/bin/acme-device erase
 ./provision.sh cartridge CART-DEMO
 
+read -p "Press Enter to continue..."
 
 echo "> Station generates keys, issuer signs, station verifies, image assembly, station erasing its copy, and registration:"
 
 echo "> Image contents:"
 docker exec acme-cartridge ls -l /var/lib/acme-device
 
+read -p "Press Enter to continue..."
+
 echo "> Comapre, console has more:"
 docker exec acme-console ls -l /var/lib/acme-device
+
+read -p "Press Enter to continue..."
 
 echo "> No 'keys held':"
 docker exec acme-provision /opt/acme/bin/acme-station list
 
+read -p "Press Enter to continue..."
+
 echo "> Empty:"
 docker exec acme-provision ls /var/lib/acme-station/work
+
+read -p "Press Enter to continue..."
 
 echo "> New cartridge row:"
 $REG list
 
+read -p "Press Enter to continue..."
+
 echo "> Prints 'known':"
 docker exec acme-server /opt/acme/bin/acme-registry import /srv/reg
+
+read -p "Press Enter to continue..."
 
 # ===================================================================
 # Section 3: Implementations
@@ -320,16 +373,24 @@ step "Implementation & Code Checks"
 echo "> Pinned Crypto Library; lists only 'crypto.py'. Every other file calls its functions:"
 docker exec acme-issuer grep -rlE "^(from|import) (nacl|cryptography)" /opt/acme/acme
 
+read -p "Press Enter to continue..."
+
 echo "> Defined Cert Format, Shows the format header:"
 docker exec acme-issuer sed -n '1,20p' /opt/acme/acme/cert.py
+
+read -p "Press Enter to continue..."
 
 echo "> Offline Issuer Tool, the console's 'update certs 2' from status:"
 $ISS --help
 status acme-console | grep -E 'update certs|private keys'
 
+read -p "Press Enter to continue..."
+
 echo "> Provisioning usage and status:"
 ./provision.sh || true
 ./provision.sh status
+
+read -p "Press Enter to continue..."
 
 # ===============================
 step "Unit-Tested Trust Checks"
