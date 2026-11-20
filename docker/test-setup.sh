@@ -14,10 +14,10 @@ docker exec acme-issuer /opt/acme/bin/acme-issuer init-root
 docker exec acme-issuer /opt/acme/bin/acme-issuer init-update-keys
 
 echo "> Provisioning devices..."
-sudo ./provision.sh trust
-sudo ./provision.sh server    SERVER-1
-sudo ./provision.sh console   CONSOLE-X1
-sudo ./provision.sh cartridge CART-A1
+./provision.sh trust
+./provision.sh server    SERVER-1
+./provision.sh console   CONSOLE-X1
+./provision.sh cartridge CART-A1
 
 echo "> Running Phase 0 validations..."
 cd "$PROJECT_DIR/docker"

@@ -13,7 +13,7 @@
 #     acme-console, acme-cartridge
 #   - Override names with ISSUER=, STATION=, SERVER=, CONSOLE=, CARTRIDGE=
 #   - Ignore network air-gap by adding: ISSUER_FLAGS=--allow-network
-#   - Files move between containers through the host with docker cp,
+#   - Files move between containers in a tar stream through the host,
 #     standing in for removable media
 # ===================================================================
 set -euo pipefail
@@ -25,9 +25,6 @@ CONSOLE=${CONSOLE:-acme-console}
 CARTRIDGE=${CARTRIDGE:-acme-cartridge}
 ISSUER_FLAGS=${ISSUER_FLAGS:-}
 BIN=/opt/acme/bin
-TMP=$(mktemp -d)
-cleanup() { find "$TMP" -type f -exec shred -u {} + 2>/dev/null || true; rm -rf "$TMP"; }
-trap cleanup EXIT
 
 usage() {
   cat <<'EOF'
@@ -46,8 +43,6 @@ EOF
 
 say() { printf '\n== %s\n' "$*"; }
 ct()   { local id=$1; shift; docker exec "$id" "$@"; }
-pull() { docker cp -q "$1:$2" "$3"; }
-push() { docker cp -q "$2" "$1:$3"; }
 
 preflight() {
   command -v docker >/dev/null || { echo "docker not found" >&2; exit 1; }
@@ -61,14 +56,15 @@ preflight() {
 }
 
 # carry SRC:SRC_DIR to DST:DST_DIR (replacing DST_DIR)
+# The tar streams through the host in a pipe, standing in for removable
+# media. No file is written on the host, so the host user's UID never ends
+# up on a file inside a container (root there can't override permissions,
+# because the containers drop all capabilities).
 carry() {
   local src=$1 sdir=$2 dst=$3 ddir=$4
-  ct "$src" tar cf /srv/xfer.tar -C "$sdir" .
-  pull "$src" /srv/xfer.tar "$TMP/xfer.tar"
-  ct "$src" shred -u /srv/xfer.tar
-  push "$dst" "$TMP/xfer.tar" /srv/xfer.tar
-  shred -u "$TMP/xfer.tar"
-  ct "$dst" sh -c "rm -rf $ddir && mkdir -p $ddir && tar xf /srv/xfer.tar -C $ddir --no-same-owner && shred -u /srv/xfer.tar"
+  ct "$dst" sh -c "rm -rf $ddir && mkdir -p $ddir"
+  docker exec "$src" tar cf - -C "$sdir" . \
+    | docker exec -i "$dst" tar xf - -C "$ddir" --no-same-owner
 }
 
 serial_of() { sed -n 's/^serial=//p' | tr -d '\r'; }
