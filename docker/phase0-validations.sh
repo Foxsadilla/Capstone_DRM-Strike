@@ -50,6 +50,13 @@ step() {
   echo "----------------------"
 }
 
+for c in acme-server acme-console acme-cartridge; do
+    docker exec "$c" test -f /var/lib/acme-device/device.cert \
+    || { echo "FATAL: $c is not provisioned. Run provision.sh first."; exit 1; }
+done
+docker exec acme-provision test -f /var/lib/acme-station/trust/root.cert |
+    || { echo "FATAL: station has no trust anchor"; exit 1}
+
 #echo "> :"
 # ===================================================================
 # Section 1: Design Attributes
@@ -278,7 +285,7 @@ step "Image Assembly and Registration (Re-provisioning Cartridge)"
 
 echo "> Runs the whole flow with a heading per step, erase the cartridge and provision it again:"
 docker exec acme-cartridge /opt/acme/bin/acme-device erase
-./home/user/Documents/Capstone_DRM-Strike/provision.sh cartridge CART-DEMO
+./provision.sh cartridge CART-DEMO
 
 
 echo "> Station generates keys, issuer signs, station verifies, image assembly, station erasing its copy, and registration:"
@@ -320,8 +327,8 @@ $ISS --help
 status acme-console | grep -E 'update certs|private keys'
 
 echo "> Provisioning usage and status:"
-./home/user/Documents/Capstone_DRM-Strike/provision.sh || true
-./home/user/Documents/Capstone_DRM-Strike/provision.sh status
+./provision.sh || true
+./provision.sh status
 
 # ===============================
 step "Unit-Tested Trust Checks"
