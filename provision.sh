@@ -99,4 +99,55 @@ deliver() {   # deliver SERIAL DEVICE [install args]
 register() {  # register SERIAL
   say "Registration on the server (0.6)"
   ct "$STATION" rm -rf /srv/reg
-  ct "$STATION" sh -c "mkdir -p /srv/reg && cp /var/lib/acme-station/certs/$1.cert
+  ct "$STATION" sh -c "mkdir -p /srv/reg && cp /var/lib/acme-station/certs/$1.cert /var/lib/acme-station/trust/update-*.cert /srv/reg/"
+  carry "$STATION" /srv/reg "$SERVER" /srv/reg
+  ct "$SERVER" $BIN/acme-registry import /srv/reg
+}
+
+self_keyed() {  # self_keyed ROLE DEVICE MODEL   (console, server)
+  local role=$1 dev=$2 model=$3 serial
+  say "Device $dev generates its own keys (0.3)"
+  ct "$dev" rm -rf /srv/out
+  serial=$(ct "$dev" $BIN/acme-device init --role "$role" --model "$model" --csr-out /srv/out/request.csr | serial_of)
+  [ -n "$serial" ] || { echo "key generation failed" >&2; exit 1; }
+  echo "serial $serial"
+  carry "$dev" /srv/out "$STATION" /srv/in
+  ct "$STATION" $BIN/acme-station accept /srv/in/request.csr
+  sign_round
+  deliver "$serial" "$dev"
+  register "$serial"
+}
+
+case "${1:-}" in
+  trust|server|console|cartridge|status) ;;
+  *) usage; exit 1 ;;
+esac
+preflight
+
+case "$1" in
+  trust)
+    say "Issuer -> station: public certificates"
+    ct "$ISSUER" rm -rf /srv/public
+    ct "$ISSUER" $BIN/acme-issuer export-public /srv/public
+    carry "$ISSUER" /srv/public "$STATION" /srv/trust
+    ct "$STATION" $BIN/acme-station trust /srv/trust ;;
+  server)   self_keyed server  "$SERVER"  "${2:?model required}" ;;
+  console)  self_keyed console "$CONSOLE" "${2:?model required}" ;;
+  cartridge)
+    model=${2:?model required}
+    say "Station generates the cartridge keys (0.3)"
+    serial=$(ct "$STATION" $BIN/acme-station new-cartridge --model "$model" | serial_of)
+    [ -n "$serial" ] || { echo "key generation failed" >&2; exit 1; }
+    echo "serial $serial"
+    sign_round
+    deliver "$serial" "$CARTRIDGE" --role cartridge
+    say "Station erases its copy of the cartridge keys"
+    ct "$STATION" $BIN/acme-station erase "$serial"
+    register "$serial" ;;
+  status)
+    for dev in "$SERVER" "$CONSOLE" "$CARTRIDGE"; do
+      say "Device $dev"; ct "$dev" $BIN/acme-device status || true
+    done
+    say "Station";  ct "$STATION" $BIN/acme-station list || true
+    say "Registry"; ct "$SERVER" $BIN/acme-registry list || true ;;
+esac
