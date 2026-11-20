@@ -181,7 +181,7 @@ Phase 0's steps 0.3-0.6
 **0.6 - Registry**
 - The server verifies the cert and records the serial, role, model, status active, and timestamps
 ``` bash
-export RUNTIME=docker
+./provision.sh trust
 ./provision.sh server    SERVER-1
 ./provision.sh console   CONSOLE-X1
 ./provision.sh cartridge CART-A1

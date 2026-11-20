@@ -1,0 +1,7 @@
+# Force Unix line endings so scripts run on Linux and in the containers,
+# even when the repo is edited on Windows.
+* text=auto eol=lf
+*.pdf binary
+*.gz binary
+*.zip binary
+*.png binary

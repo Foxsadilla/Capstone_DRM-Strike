@@ -54,8 +54,8 @@ for c in acme-server acme-console acme-cartridge; do
     docker exec "$c" test -f /var/lib/acme-device/device.cert \
     || { echo "FATAL: $c is not provisioned. Run provision.sh first."; exit 1; }
 done
-docker exec acme-provision test -f /var/lib/acme-station/trust/root.cert |
-    || { echo "FATAL: station has no trust anchor"; exit 1}
+docker exec acme-provision test -f /var/lib/acme-station/trust/root.cert \
+    || { echo "FATAL: station has no trust anchor"; exit 1; }
 
 #echo "> :"
 # ===================================================================
@@ -269,8 +269,10 @@ step "Cert Issuance & Duplicate Rejection"
 
 echo "> Leave a DEMO-CONSOLE entry in the issuer's append-only log, which is harmless and identifiable:"
 docker exec acme-issuer mkdir -p /srv/demo-in
-docker cp acme-console:/tmp/demo-out/request.csr ./demo.csr
-docker cp ./demo.csr acme-issuer:/srv/demo-in/demo.csr
+# Stream through the host instead of docker cp: docker cp keeps the host
+# user's UID, and root in a cap_drop container can't read that mode-600 file.
+docker exec acme-console cat /tmp/demo-out/request.csr \
+  | docker exec -i acme-issuer sh -c 'cat > /srv/demo-in/demo.csr'
 $ISS sign /srv/demo-in /srv/demo-out
 docker exec acme-issuer sh -c '/opt/acme/bin/acme-issuer show /srv/demo-out/*.cert'
 $ISS sign /srv/demo-in /srv/demo-out; echo "exit=$?"
@@ -278,7 +280,6 @@ $ISS sign /srv/demo-in /srv/demo-out; echo "exit=$?"
 echo "> Cleaning up demo CSR/Cert files:"
 docker exec acme-console rm -rf /tmp/demo /tmp/demo-out
 docker exec acme-issuer rm -rf /srv/demo-in /srv/demo-out
-rm -f demo.csr
 
 # ===============================
 step "Image Assembly and Registration (Re-provisioning Cartridge)"
