@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "_misc/Notes.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "Notes"
             }
           },
           {
@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "_misc/Docker-PHASE-01.md",
-                "mode": "source",
+                "file": "README.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Docker-PHASE-01"
+              "title": "README"
             }
           }
         ],
@@ -98,7 +98,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "be5128089f547d80",
@@ -205,21 +206,22 @@
   },
   "active": "aa9953d477ab6fc3",
   "lastOpenFiles": [
+    "docker/output-annotated.txt",
+    "_misc/Notes.md",
+    "_misc/Docker-PHASE-01.md",
+    "README.md",
     "docker/output.md",
     "docker/output.txt",
     "docker/test-setup.sh",
-    "README.md",
     "docker/README.md",
     "docker/tmp",
     "docker/output-dump.txt",
     "docker/tmp.txt",
     "docker/provision.sh",
     "docker/phase0-validations.sh",
-    "_misc/Docker-PHASE-01.md",
     "_misc/acme_security_design.pdf",
     "_misc",
     "docker/Server.yaml",
-    "docker/Provision.yaml",
     "SCP/README.md",
     "TMP/README.md",
     "cartridge-runbook.md",

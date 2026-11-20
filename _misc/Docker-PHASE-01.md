@@ -1,6 +1,6 @@
 ## Run Docker
 ### 1. Setup
-(Anne Only:) ` ssh -t user@gui 'cd /home/user/Documents/Capstone_DRM-Strike && exec $SHELL -l'`
+(Anne Only:)  `ssh -t user@gui 'cd /home/user/Documents/Capstone_DRM-Strike && exec $SHELL -l'`
 ``` bash
 cd <PATH>
 chmod +x provision.sh bin/*
@@ -70,6 +70,8 @@ ISS="docker exec acme-issuer /opt/acme/bin/acme-issuer"
 REG="docker exec acme-server /opt/acme/bin/acme-registry"
 status() { docker exec "$1" /opt/acme/bin/acme-device status; }
 ```
+
+**WIP THE CODE SEGMENTS I WANT TO PUT HERE ARE IN A BASH SCRIPT ON THE GIT**
 ### Section 1 - Design Attributes
 
 #### One Trust Anchor (Offline)
