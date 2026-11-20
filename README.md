@@ -1,4 +1,31 @@
 # DRM-Strike Phase-0
+## Phase Goals
+### Section 1 - Design Attributes
+- [ ] One Trust Anchor (Offline)
+- [ ] Per-Device Identities
+- [ ] Roles
+- [ ] Key Seperation
+- [ ] Software Key Storage (ES-256-GCM)
+- [ ] Compact Certificate Format (Serial, Role, Model, PK, Validity, Issuer Signature)
+- [ ] Modern Small Algorithms (Ed25519 and X25519)
+- [ ] Device Registry (Serial, Role, Model, and Status)
+### Section 2 - Protocols
+- [ ] Root Generattion (Offline)
+- [ ] Update Keys (Offline)
+- [ ] Device Key Generation
+- [ ] Cert Issuance
+- [ ] Image Assembly
+- [ ] Registration
+### Section 3 - Implementations
+- [ ] Pinned Crypto Library
+- [ ] Defined Cert Format
+- [ ] Offline Issuer Tool
+- [ ] Generated Update Keys
+- [ ] Software Key Storage
+- [ ] Provisioning Flow
+- [ ] Device Registry
+- [ ] Unit-Tested the Trust Checks
+
 ## Containers
 
 | CT             | Role                                          |
@@ -109,43 +136,6 @@ role + serial ───────────────────┘      
 - Ed25519/X25519
 	- Makes small keys. constant time code and has no parameters to get wrong
 ## Files
-### Host View
-```
-├── acme
-│   ├── cert.py
-│   ├── crypto.py
-│   ├── csr.py
-│   ├── device.py
-│   ├── __init__.py
-│   ├── issuer.py
-│   ├── keystore.py
-│   ├── registry.py
-│   └── station.py
-├── bin
-│   ├── acme-device
-│   ├── acme-issuer
-│   ├── acme-registry
-│   └── acme-station
-├── docker
-│   ├── .env
-│   ├── acme-phase0-lib.tar.gz
-│   ├── Cartridge.yaml
-│   ├── Console.yaml
-│   ├── Dockerfile
-│   ├── Issuer.yaml
-│   ├── Provision.yaml
-│   └── Server.yaml
-├── provision.sh
-├── README.md
-└── tests
-    ├── test_cert.py
-    ├── test_crypto.py
-    └── test_issuer.py
-
-5 directories, 25 files
-```
-
-### Container View
 
 | Path                               | Contents                                                 | Storage                |
 | ---------------------------------- | -------------------------------------------------------- | ---------------------- |
@@ -213,7 +203,7 @@ export RUNTIME=docker
 | Kill instance        | `docker compose down -v`                                                                                                                                                                 |
 ### 5. Notes
 
-#### Certificate Format
+#### Certificate Format (CBOR)
 
 | Key | Field        | Type                                                                 |
 | --- | ------------ | -------------------------------------------------------------------- |
@@ -226,3 +216,19 @@ export RUNTIME=docker
 | 7   | Not Before   | Unix Sec                                                             |
 | 8   | Not After    | Unix Sec                                                             |
 | 9   | Ussuer       | 16-byte  serial of issuer cert                                       |
+**Certificate in CBOR Diagnostic Notation:**
+``` cbor-diag
+{
+  1: 1,                                  / Version (Int) /
+  2: h'00112233445566778899AABBCCDDEEFF', / Serial (16-byte bstr) /
+  3: 2,                                  / Role: 2 = console (Int) /
+  4: "Model-X1",                         / Model (tstr, 1-32 chars) /
+  5: h'A1B2C3...32_BYTES_ED25519...',    / Signing PK (32-byte bstr) /
+  6: h'D4E5F6...32_BYTES_X25519...',     / Encrypted PK (32-byte bstr) /
+  7: 1735689600,                         / Not Before (Unix Sec Int) /
+  8: 1767225600,                         / Not After (Unix Sec Int) /
+  9: h'FFEEDDCCBBAA99887766554433221100'  / Issuer Serial (16-byte bstr) /
+}
+```
+
+...

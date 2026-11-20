@@ -4,24 +4,49 @@
     "type": "split",
     "children": [
       {
-        "id": "ea2762df93f919cd",
-        "type": "tabs",
+        "id": "3caf53525e7c61f9",
+        "type": "split",
         "children": [
           {
-            "id": "0b5c04fba08a7616",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "README.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "README"
-            }
+            "id": "ea2762df93f919cd",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "0b5c04fba08a7616",
+                "type": "leaf",
+                "state": {
+                  "type": "markdown",
+                  "state": {
+                    "file": "README.md",
+                    "mode": "source",
+                    "source": false
+                  },
+                  "icon": "lucide-file",
+                  "title": "README"
+                }
+              }
+            ]
+          },
+          {
+            "id": "5d6165602b11a265",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "1ecbeea71e620403",
+                "type": "leaf",
+                "state": {
+                  "type": "pdf",
+                  "state": {
+                    "file": "_misc/acme_security_design.pdf"
+                  },
+                  "icon": "lucide-file-text",
+                  "title": "acme_security_design"
+                }
+              }
+            ]
           }
-        ]
+        ],
+        "direction": "horizontal"
       }
     ],
     "direction": "vertical"
@@ -83,7 +108,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "1411d121102c5986",
@@ -188,12 +214,12 @@
       "bases:Create new base": false
     }
   },
-  "active": "9ad7e43c6da57797",
+  "active": "0b5c04fba08a7616",
   "lastOpenFiles": [
     "_misc/acme_security_design.pdf",
+    "README.md",
     "_misc",
     "Untitled.md",
-    "README.md",
     "ACME-Phase0-Runbook.md",
     "Device.md",
     "_Docker-Run.md",
