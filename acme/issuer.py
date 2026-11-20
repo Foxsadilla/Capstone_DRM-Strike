@@ -235,7 +235,7 @@ def _print(d: dict) -> None:
     # end
 
 # ===================================================================
-# CLI print ou tof the issueing process for reference
+# CLI Declarations 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="acme-issuer", description="Offline ACME certificate issuer")
     p.add_argument("--home", default=os.environ.get("ACME_ISSUER_HOME", DEFAULT_HOME))

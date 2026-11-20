@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "_misc/Notes.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -35,8 +35,7 @@
               "title": "README"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -204,8 +203,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "aa9953d477ab6fc3",
+  "active": "370d10049d0654d5",
   "lastOpenFiles": [
+    "README.md",
+    "_misc/Notes.md",
     "docker/demo.sh",
     "docker/phase0-validations.sh",
     "demo.sh",
@@ -214,14 +215,11 @@
     "_misc/Old Scripts",
     "_misc/New folder",
     "docker/output-annotated.txt",
-    "_misc/Notes.md",
     "_misc/Docker-PHASE-01.md",
-    "README.md",
     "docker/output.md",
     "docker/output.txt",
     "docker/test-setup.sh",
     "docker/README.md",
-    "docker/tmp",
     "SCP/README.md",
     "TMP/README.md",
     "cartridge-runbook.md",
