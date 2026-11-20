@@ -216,6 +216,7 @@ export RUNTIME=docker
 | 7   | Not Before   | Unix Sec                                                             |
 | 8   | Not After    | Unix Sec                                                             |
 | 9   | Ussuer       | 16-byte  serial of issuer cert                                       |
+
 **Certificate in CBOR Diagnostic Notation:**
 ``` cbor-diag
 {
