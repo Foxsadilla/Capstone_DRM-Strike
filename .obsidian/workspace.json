@@ -1,26 +1,14 @@
 {
   "main": {
-    "id": "0c39d45f6e6b48ec",
+    "id": "d1a6e2d715693213",
     "type": "split",
     "children": [
       {
-        "id": "ea2762df93f919cd",
+        "id": "eb65ba15064117b0",
         "type": "tabs",
         "children": [
           {
-            "id": "1ecbeea71e620403",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "_misc/acme_security_design.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "acme_security_design"
-            }
-          },
-          {
-            "id": "ebe4426615bf34b4",
+            "id": "370d10049d0654d5",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -32,37 +20,22 @@
               "icon": "lucide-file",
               "title": "README"
             }
-          },
-          {
-            "id": "0b5c04fba08a7616",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "_misc/Docker-PHASE-01.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Docker-PHASE-01"
-            }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
   },
   "left": {
-    "id": "f4af999b4be84ace",
+    "id": "2380a32ed227215b",
     "type": "split",
     "children": [
       {
-        "id": "a048d7a8a1963d07",
+        "id": "deda5b3e9cbbeab2",
         "type": "tabs",
         "children": [
           {
-            "id": "9ad7e43c6da57797",
+            "id": "46ed0b4351e2fd57",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -77,7 +50,7 @@
             }
           },
           {
-            "id": "007836b22744fbad",
+            "id": "8abf79397f54c3ec",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -94,7 +67,7 @@
             }
           },
           {
-            "id": "a8b69d4e00d222b7",
+            "id": "5a272adf5b466960",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -110,23 +83,23 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 300
   },
   "right": {
-    "id": "1411d121102c5986",
+    "id": "be5128089f547d80",
     "type": "split",
     "children": [
       {
-        "id": "9e9bba494f248e9d",
+        "id": "40f3baa4943e9ff6",
         "type": "tabs",
         "children": [
           {
-            "id": "8f4f53ac3e7a160a",
+            "id": "49538d0b1bbd533b",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "_Docker-Run.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -140,12 +113,12 @@
             }
           },
           {
-            "id": "db13062b20814a75",
+            "id": "50b1575c29a314b2",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "_Docker-Run.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -154,7 +127,7 @@
             }
           },
           {
-            "id": "0ce97ebd77b08276",
+            "id": "713a4b7044a08c7b",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -169,7 +142,7 @@
             }
           },
           {
-            "id": "2820ea016c8e67b7",
+            "id": "8979b3f07d54f26f",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -178,17 +151,17 @@
                 "showSearch": false,
                 "searchQuery": ""
               },
-              "icon": "lucide-ghost",
-              "title": "all-properties"
+              "icon": "lucide-archive",
+              "title": "All properties"
             }
           },
           {
-            "id": "eef4279a538e1fa7",
+            "id": "4bde8518a6065fee",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "_Docker-Run.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -215,25 +188,24 @@
       "bases:Create new base": false
     }
   },
-  "active": "0b5c04fba08a7616",
+  "active": "370d10049d0654d5",
   "lastOpenFiles": [
-    "docker/demo.csr",
-    "docker/provision.sh",
-    "docker/tmp~",
     "docker/tmp",
-    "docker/phase0-validations.sh~",
+    "docker/provision.sh",
     "docker/phase0-validations.sh",
-    "README.md",
     "_misc/Docker-PHASE-01.md",
     "_misc/acme_security_design.pdf",
     "_misc",
-    "Untitled.md",
-    "ACME-Phase0-Runbook.md",
-    "Device.md",
-    "_Docker-Run.md",
-    "Station.md",
-    "Registry.md",
-    "keystore.md",
-    "Issuer.md"
+    "docker/Server.yaml",
+    "docker/Provision.yaml",
+    "docker/Issuer.yaml",
+    "docker/Console.yaml",
+    "docker/Cartridge.yaml",
+    "acme/cert.py",
+    "README.md",
+    "SCP/README.md",
+    "TMP/README.md",
+    "cartridge-runbook.md",
+    "Misc/Old-README.md"
   ]
 }
