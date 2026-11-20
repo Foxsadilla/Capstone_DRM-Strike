@@ -1,4 +1,3 @@
-# ACME-Cartridge (Proxmox CT 414)
 # Cartridge identity: signing key only, injected by the station.
 # No network: the console link will be serial, not IP.
 name: acme-phase0

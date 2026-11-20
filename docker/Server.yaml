@@ -1,4 +1,3 @@
-# ACME-Server (Proxmox CT 412)
 # Server identity and the device registry. 
 name: acme-phase0
 

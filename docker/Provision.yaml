@@ -1,4 +1,3 @@
-# ACME-Provision (Proxmox CT 411)
 # Manufacturing and provisioning station: sign requests in, certificates out.
 # Generates cartridge keys, so it has no network.
 name: acme-phase0

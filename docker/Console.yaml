@@ -1,4 +1,3 @@
-# ACME-Console (Proxmox CT 413)
 # Console identity: signing and encryption key pairs, both update certs.
 name: acme-phase0
 

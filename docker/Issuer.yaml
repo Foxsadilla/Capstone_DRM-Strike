@@ -1,4 +1,3 @@
-# ACME-Issuer (Proxmox CT 410)
 # Offline issuer: ACME issuing key, primary and backup update keys.
 # No network interface at all, so acme-issuer runs without --allow-network.
 name: acme-phase0

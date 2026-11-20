@@ -13,7 +13,7 @@
 #   - Test that certs are rejected if their role does not match the one expected by server
 #   - Test that the root cert will not be passed as a device cert
 #   - Test expected roles by type error
-#   -  
+#   -  ...
 # ===================================================================
 import cbor2
 import pytest
@@ -50,7 +50,7 @@ def make(root, role=Role.CARTRIDGE, **kw):
 
 
 def forge(root, mutate, sk=None):
-    """Sign an arbitrary (possibly invalid) tbs with the real root key."""
+    # Sign an arbitrary (possibly invalid) tbs with the real root key
     rsk, anchor = root
     tbs = {1: 1, 2: crypto.random(16), 3: int(Role.CARTRIDGE), 4: "CART-A1",
            5: crypto.sign_keygen()[1], 7: NOW - DAY, 8: NOW + DAY,
@@ -215,7 +215,7 @@ MUTATIONS = {
 
 @pytest.mark.parametrize("name", MUTATIONS)
 def test_correctly_signed_but_malformed(root, name):
-    """Even with a genuine ACME signature, a bad body must be rejected."""
+    # Even with a genuine ACME signature, a bad body must be rejected.
     reject(forge(root, MUTATIONS[name]), root[1], Role.CARTRIDGE, "malformed")
 
 
@@ -239,7 +239,7 @@ def test_envelope_shapes(root):
 
 
 def test_signature_context_binds(root):
-    """A signature over the bare tbs (no context prefix) is not a cert."""
+    # signature over the bare tbs (no context prefix) is not a cert
     sk, anchor = root
     tbs = cbor2.loads(make(root))[0]
     raw = cbor2.dumps([tbs, crypto.sign(sk, tbs)], canonical=True)
