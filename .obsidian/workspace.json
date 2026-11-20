@@ -21,12 +21,7 @@
               "title": "README"
             }
           }
-<<<<<<< HEAD
-        ],
-        "currentTab": 1
-=======
         ]
->>>>>>> 9a80f7960d7e1eae2ef33d97f7a120265c65c6cb
       }
     ],
     "direction": "vertical"
@@ -193,34 +188,20 @@
       "bases:Create new base": false
     }
   },
-<<<<<<< HEAD
-  "active": "ebe4426615bf34b4",
+  "active": "46ed0b4351e2fd57",
   "lastOpenFiles": [
-    "_misc/acme_security_design.pdf",
-    "README.md",
-    "_misc/Docker-PHASE-01.md",
-    "docker/demo.csr",
-    "docker/provision.sh",
-    "docker/tmp~",
-=======
-  "active": "370d10049d0654d5",
-  "lastOpenFiles": [
->>>>>>> 9a80f7960d7e1eae2ef33d97f7a120265c65c6cb
+    "docker/README.md",
     "docker/tmp",
+    "docker/output-dump.txt",
+    "docker/tmp.txt",
     "docker/provision.sh",
     "docker/phase0-validations.sh",
-<<<<<<< HEAD
-=======
     "_misc/Docker-PHASE-01.md",
     "_misc/acme_security_design.pdf",
->>>>>>> 9a80f7960d7e1eae2ef33d97f7a120265c65c6cb
     "_misc",
     "docker/Server.yaml",
     "docker/Provision.yaml",
     "docker/Issuer.yaml",
-    "docker/Console.yaml",
-    "docker/Cartridge.yaml",
-    "acme/cert.py",
     "README.md",
     "SCP/README.md",
     "TMP/README.md",
