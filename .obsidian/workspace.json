@@ -217,6 +217,7 @@
   },
   "active": "ebe4426615bf34b4",
   "lastOpenFiles": [
+    "docker/output.txt",
     "docker/test-setup.sh",
     "_misc/acme_security_design.pdf",
     "README.md",
